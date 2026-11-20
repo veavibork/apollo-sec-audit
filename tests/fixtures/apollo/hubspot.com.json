@@ -1,0 +1,42 @@
+{
+  "organization": {
+    "annual_revenue": 2600000000.0,
+    "annual_revenue_printed": "2.6B",
+    "city": "Cambridge",
+    "country": "United States",
+    "current_technologies": [
+      {
+        "category": "Other",
+        "name": "Fake Tech",
+        "uid": "fake_tech"
+      }
+    ],
+    "estimated_num_employees": 8500,
+    "founded_year": 2005,
+    "id": "000000000000000000000001",
+    "industry": "computer software",
+    "keywords": [
+      "fake keyword"
+    ],
+    "naics_codes": [
+      "513210"
+    ],
+    "name": "HubSpot",
+    "primary_domain": "hubspot.com",
+    "publicly_traded_exchange": "nasdaq",
+    "publicly_traded_symbol": "HUBS",
+    "short_description": "Fixture: Apollo estimates replaced with fake values.",
+    "sic_codes": [
+      "7372"
+    ],
+    "state": "Massachusetts",
+    "suborganizations": [
+      {
+        "id": "fake_sub",
+        "name": "Fake Subsidiary",
+        "website_url": null
+      }
+    ],
+    "website_url": "http://www.hubspot.com"
+  }
+}
