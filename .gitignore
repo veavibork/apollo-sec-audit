@@ -1,0 +1,29 @@
+# Secrets
+.env
+
+# Generated data
+cache/
+reports/
+
+# Hiring brief (not ours to publish)
+Apollo.io Technical Exercise*
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Editor and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
