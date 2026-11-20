@@ -26,7 +26,7 @@ HTTP 200, 40 KB, one top-level key: `organization` (58 keys).
 
 - Size: the bulk is `current_technologies` (28 KB), not subsidiaries (`suborganizations` is 3.7 KB).
 - Response headers show request counters and limits, not credits: `x-24-hour-usage`, `x-hourly-usage`, `x-minute-usage`, `x-rate-limit-24-hour: 600`, `x-rate-limit-hourly: 200`, `x-rate-limit-minute: 50`.
-- Credits: 1 of 85 used before the call. Confirm the cost of one enrich call in the Apollo UI.
+- Credits: **one enrich call costs one credit.** The Apollo UI went from 1 to 2 of 85 used after this single call.
 
 ## SEC `company_tickers.json`
 
