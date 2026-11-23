@@ -24,9 +24,13 @@ Requirements: Python 3.12.
 
 ```bash
 python -m venv .venv
-.venv/Scripts/pip install -e ".[dev]"      # Windows; use .venv/bin/pip elsewhere
-cp .env.example .env                       # set SEC_USER_AGENT="Your Name you@example.com"
+source .venv/bin/activate        # macOS/Linux
+# .venv\Scriptsctivate         # Windows (PowerShell or cmd)
+pip install -e ".[dev]"
+cp .env.example .env             # set SEC_USER_AGENT="Your Name you@example.com"
 ```
+
+Every command below assumes the environment is active.
 
 `APOLLO_API_KEY` is needed only for live Apollo calls (one credit each).
 

@@ -43,7 +43,7 @@ All item descriptions below are quoted from the SEC bulletin above.
 
 ### Fiscal year end and former names
 
-- **Hypothesis.** A known fiscal year end lets reps time outreach to budget planning, instead of assuming a calendar year. Three of the seven SEC-matched accounts in the sample (Salesforce, Walmart and NVIDIA) close their year on January 31.
+- **Hypothesis.** A known fiscal year end lets reps time outreach to budget planning, instead of assuming a calendar year. Three of the seven SEC-matched accounts in the sample (Salesforce, Walmart and NVIDIA) close their fiscal year in late January. SEC lists January 31; NVIDIA's latest year actually ended January 25, because it runs 52/53-week years.
 - **Source (Apollo).** Former names help find duplicate records after a rename. Apollo's own guidance lists the cause: "Company data changes due to acquisitions, rebrands, and office closures." ([Apollo, *How Fast Does B2B Contact Data Decay*](https://www.apollo.io/insights/whats-the-average-rate-of-data-decay-in-a-b2b-contact-database-and-how-do-i-address-it))
 
 ## Corrections: why accurate firmographics matter
