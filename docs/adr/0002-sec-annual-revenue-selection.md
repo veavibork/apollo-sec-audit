@@ -11,7 +11,7 @@ Collect rows from every candidate concept, then keep a row only if:
 - the unit is `USD`, and
 - the period (`end - start`) is 350 to 380 days.
 
-From those, pick the row with the latest `end`; break ties by the latest `filed`, which picks up restatements. Label the period by the year of `end`. Link to the filing index built from `accn`.
+From those, pick the row with the latest `end`; break ties by the latest `filed`, which picks up restatements. Label the period by its `end` date, not a fiscal-year number: `fy` is the filing year, and companies whose year ends in January or February number their years differently. Link to the filing index built from `accn`.
 
 ## Consequences
 - Concept switches can't produce stale revenue.

@@ -124,7 +124,7 @@ def test_revenue_rationale_names_source_rule_and_differences() -> None:
     audit = run(case("stale_revenue"))
     revenue = field(audit, "annual_revenue")
     assert revenue.rationale == (
-        "SEC 10-K FY2025 revenue $3.13B (period ending 2025-12-31); "
+        "SEC 10-K revenue $3.13B for the year ending 2025-12-31; "
         "CRM differs by 30%; Apollo differs by 0%."
     )
     assert revenue.evidence_url is not None
@@ -167,7 +167,15 @@ def test_industry_shows_apollo_label_for_display_only() -> None:
 
 @pytest.mark.parametrize(
     ("value", "text"),
-    [(3_131_266_000, "$3.13B"), (40_000_000, "$40.00M"), (12_500, "$12.50K"), (999, "$999")],
+    [
+        (3_131_266_000, "$3.13B"),
+        (40_000_000, "$40.00M"),
+        (12_500, "$12.50K"),
+        (999, "$999"),
+        (999_999, "$1.00M"),
+        (999_999_999, "$1.00B"),
+        (999.99, "$1.00K"),
+    ],
 )
 def test_money(value: float, text: str) -> None:
     assert money(value) == text

@@ -48,8 +48,10 @@ def _min_confidence(a: str, b: str) -> str:
 
 
 def money(value: float) -> str:
-    for size, suffix in ((1e9, "B"), (1e6, "M"), (1e3, "K")):
-        if abs(value) >= size:
+    """Uses the largest unit the value reaches once rounded for display."""
+    units = ((1e9, "B", 1e6, 2), (1e6, "M", 1e3, 2), (1e3, "K", 1.0, 0))
+    for size, suffix, lower, lower_digits in units:
+        if abs(value) >= size or round(abs(value) / lower, lower_digits) >= 1000:
             return f"${value / size:.2f}{suffix}"
     return f"${value:,.0f}"
 
@@ -100,14 +102,16 @@ def apollo_trust(
     if org is None:
         return UNUSABLE, []
     if not account.name or not org.name:
-        return Trust(True, HIGH, ""), []
-    check = check_name(account.name, [org.name], rules.name_match)
-    if check.verdict == PASS:
-        return Trust(True, HIGH, ""), []
-    note = (
-        f"CRM name '{account.name}' vs Apollo '{org.name}' "
-        f"name check {check.verdict} ({check.score})"
-    )
+        missing = "CRM name" if not account.name else "Apollo name"
+        note = f"{missing} is blank, so the domain's company can't be confirmed"
+    else:
+        check = check_name(account.name, [org.name], rules.name_match)
+        if check.verdict == PASS:
+            return Trust(True, HIGH, ""), []
+        note = (
+            f"CRM name '{account.name}' vs Apollo '{org.name}' "
+            f"name check {check.verdict} ({check.score})"
+        )
     review = FieldResult(
         field="domain",
         crm_value=account.domain,
@@ -232,8 +236,8 @@ def compare_account(
     sec_revenue = (
         Evidence(
             revenue.value,
-            f"SEC 10-K FY{revenue.period_end.year} revenue {money(revenue.value)} "
-            f"(period ending {revenue.period_end.isoformat()})",
+            f"SEC 10-K revenue {money(revenue.value)} "
+            f"for the year ending {revenue.period_end.isoformat()}",
             revenue.index_url,
         )
         if revenue
@@ -316,7 +320,9 @@ def compare_account(
 
     return AccountAudit(
         account=account,
-        sec_status=lookup.status,
+        sec_status="name_check_failed"
+        if lookup.status == "matched" and not s_trust.usable
+        else lookup.status,
         ticker=lookup.ticker,
         cik=lookup.match.cik if lookup.match else None,
         fields=(*fields, *reviews, *sec_reviews),

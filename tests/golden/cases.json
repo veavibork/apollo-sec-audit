@@ -36,81 +36,230 @@
     {
       "id": "public_clean",
       "expect": {
-        "annual_revenue": ["ok", "high", null],
-        "hq_state": ["ok", "high", null],
-        "industry": ["ok", "high", null],
-        "employees": ["ok", "medium", null]
+        "annual_revenue": [
+          "ok",
+          "high",
+          null
+        ],
+        "hq_state": [
+          "ok",
+          "high",
+          null
+        ],
+        "industry": [
+          "ok",
+          "high",
+          null
+        ],
+        "employees": [
+          "ok",
+          "medium",
+          null
+        ]
       },
-      "signals": ["legal_name", "fiscal_year_end", "founded_year"]
+      "signals": [
+        "legal_name",
+        "fiscal_year_end",
+        "founded_year"
+      ]
     },
     {
       "id": "stale_revenue",
-      "account": {"annual_revenue": 2200000000},
+      "account": {
+        "annual_revenue": 2200000000
+      },
       "expect": {
-        "annual_revenue": ["conflict", "high", 3131266000],
-        "hq_state": ["ok", "high", null],
-        "industry": ["ok", "high", null],
-        "employees": ["ok", "medium", null]
+        "annual_revenue": [
+          "conflict",
+          "high",
+          3131266000
+        ],
+        "hq_state": [
+          "ok",
+          "high",
+          null
+        ],
+        "industry": [
+          "ok",
+          "high",
+          null
+        ],
+        "employees": [
+          "ok",
+          "medium",
+          null
+        ]
       }
     },
     {
       "id": "revenue_just_over_tolerance",
-      "account": {"annual_revenue": 2660000000},
+      "account": {
+        "annual_revenue": 2660000000
+      },
       "expect": {
-        "annual_revenue": ["conflict", "high", 3131266000],
-        "hq_state": ["ok", "high", null],
-        "industry": ["ok", "high", null],
-        "employees": ["ok", "medium", null]
+        "annual_revenue": [
+          "conflict",
+          "high",
+          3131266000
+        ],
+        "hq_state": [
+          "ok",
+          "high",
+          null
+        ],
+        "industry": [
+          "ok",
+          "high",
+          null
+        ],
+        "employees": [
+          "ok",
+          "medium",
+          null
+        ]
       }
     },
     {
       "id": "blank_crm_fields",
-      "account": {"annual_revenue": null, "hq_state": null, "industry": null, "employees": null},
+      "account": {
+        "annual_revenue": null,
+        "hq_state": null,
+        "industry": null,
+        "employees": null
+      },
       "expect": {
-        "annual_revenue": ["missing", "high", 3131266000],
-        "hq_state": ["missing", "high", "MA"],
-        "industry": ["missing", "high", "Software"],
-        "employees": ["missing", "medium", 8500]
+        "annual_revenue": [
+          "missing",
+          "high",
+          3131266000
+        ],
+        "hq_state": [
+          "missing",
+          "high",
+          "MA"
+        ],
+        "industry": [
+          "missing",
+          "high",
+          "Software"
+        ],
+        "employees": [
+          "missing",
+          "medium",
+          8500
+        ]
       }
     },
     {
       "id": "state_as_full_name",
-      "account": {"hq_state": "Massachusetts"},
+      "account": {
+        "hq_state": "Massachusetts"
+      },
       "expect": {
-        "annual_revenue": ["ok", "high", null],
-        "hq_state": ["ok", "high", null],
-        "industry": ["ok", "high", null],
-        "employees": ["ok", "medium", null]
+        "annual_revenue": [
+          "ok",
+          "high",
+          null
+        ],
+        "hq_state": [
+          "ok",
+          "high",
+          null
+        ],
+        "industry": [
+          "ok",
+          "high",
+          null
+        ],
+        "employees": [
+          "ok",
+          "medium",
+          null
+        ]
       }
     },
     {
       "id": "wrong_state",
-      "account": {"hq_state": "CA"},
+      "account": {
+        "hq_state": "CA"
+      },
       "expect": {
-        "annual_revenue": ["ok", "high", null],
-        "hq_state": ["conflict", "high", "MA"],
-        "industry": ["ok", "high", null],
-        "employees": ["ok", "medium", null]
+        "annual_revenue": [
+          "ok",
+          "high",
+          null
+        ],
+        "hq_state": [
+          "conflict",
+          "high",
+          "MA"
+        ],
+        "industry": [
+          "ok",
+          "high",
+          null
+        ],
+        "employees": [
+          "ok",
+          "medium",
+          null
+        ]
       }
     },
     {
       "id": "industry_mismatch_goes_to_review",
-      "account": {"industry": "Retail"},
+      "account": {
+        "industry": "Retail"
+      },
       "expect": {
-        "annual_revenue": ["ok", "high", null],
-        "hq_state": ["ok", "high", null],
-        "industry": ["conflict", "low", "Software"],
-        "employees": ["ok", "medium", null]
+        "annual_revenue": [
+          "ok",
+          "high",
+          null
+        ],
+        "hq_state": [
+          "ok",
+          "high",
+          null
+        ],
+        "industry": [
+          "conflict",
+          "low",
+          "Software"
+        ],
+        "employees": [
+          "ok",
+          "medium",
+          null
+        ]
       }
     },
     {
       "id": "employees_off",
-      "account": {"employees": 5000},
+      "account": {
+        "employees": 5000
+      },
       "expect": {
-        "annual_revenue": ["ok", "high", null],
-        "hq_state": ["ok", "high", null],
-        "industry": ["ok", "high", null],
-        "employees": ["conflict", "medium", 8500]
+        "annual_revenue": [
+          "ok",
+          "high",
+          null
+        ],
+        "hq_state": [
+          "ok",
+          "high",
+          null
+        ],
+        "industry": [
+          "ok",
+          "high",
+          null
+        ],
+        "employees": [
+          "conflict",
+          "medium",
+          8500
+        ]
       }
     },
     {
@@ -134,65 +283,183 @@
       "sec": null,
       "sec_status": "no_ticker",
       "expect": {
-        "annual_revenue": ["conflict", "medium", 40000000],
-        "hq_state": ["ok", "medium", null],
-        "industry": ["unverified", null, null],
-        "employees": ["ok", "medium", null]
+        "annual_revenue": [
+          "conflict",
+          "medium",
+          40000000
+        ],
+        "hq_state": [
+          "ok",
+          "medium",
+          null
+        ],
+        "industry": [
+          "unverified",
+          null,
+          null
+        ],
+        "employees": [
+          "ok",
+          "medium",
+          null
+        ]
       },
-      "signals": ["founded_year"]
+      "signals": [
+        "founded_year"
+      ]
     },
     {
       "id": "no_apollo_org",
       "apollo": null,
       "sec_status": "no_apollo_org",
       "expect": {
-        "annual_revenue": ["unverified", null, null],
-        "hq_state": ["unverified", null, null],
-        "industry": ["unverified", null, null],
-        "employees": ["unverified", null, null]
+        "annual_revenue": [
+          "unverified",
+          null,
+          null
+        ],
+        "hq_state": [
+          "unverified",
+          null,
+          null
+        ],
+        "industry": [
+          "unverified",
+          null,
+          null
+        ],
+        "employees": [
+          "unverified",
+          null,
+          null
+        ]
       },
       "signals": []
     },
     {
       "id": "sec_name_check_fails",
-      "account": {"name": "Acme Robotics"},
-      "apollo": {"name": "Acme Robotics"},
-      "sec": {"name": "ZEBRA FOODS INC"},
-      "expect": {
-        "annual_revenue": ["ok", "medium", null],
-        "hq_state": ["ok", "medium", null],
-        "industry": ["unverified", null, null],
-        "employees": ["ok", "medium", null],
-        "sec_match": ["conflict", "low", null]
+      "account": {
+        "name": "Acme Robotics"
       },
-      "signals": ["founded_year"]
+      "apollo": {
+        "name": "Acme Robotics"
+      },
+      "sec": {
+        "name": "ZEBRA FOODS INC"
+      },
+      "expect": {
+        "annual_revenue": [
+          "ok",
+          "medium",
+          null
+        ],
+        "hq_state": [
+          "ok",
+          "medium",
+          null
+        ],
+        "industry": [
+          "unverified",
+          null,
+          null
+        ],
+        "employees": [
+          "ok",
+          "medium",
+          null
+        ],
+        "sec_match": [
+          "conflict",
+          "low",
+          null
+        ]
+      },
+      "signals": [
+        "founded_year"
+      ],
+      "sec_status": "name_check_failed"
     },
     {
       "id": "sec_name_check_narrow_fail",
-      "account": {"name": "Hubspot Software"},
-      "apollo": {"name": "Hubspot Software"},
-      "sec": {"name": "HUBSPOT SOLUTIONS INC"},
+      "account": {
+        "name": "Hubspot Software"
+      },
+      "apollo": {
+        "name": "Hubspot Software"
+      },
+      "sec": {
+        "name": "HUBSPOT SOLUTIONS INC"
+      },
       "expect": {
-        "annual_revenue": ["ok", "medium", null],
-        "hq_state": ["ok", "medium", null],
-        "industry": ["unverified", null, null],
-        "employees": ["ok", "medium", null],
-        "sec_match": ["conflict", "low", null]
-      }
+        "annual_revenue": [
+          "ok",
+          "medium",
+          null
+        ],
+        "hq_state": [
+          "ok",
+          "medium",
+          null
+        ],
+        "industry": [
+          "unverified",
+          null,
+          null
+        ],
+        "employees": [
+          "ok",
+          "medium",
+          null
+        ],
+        "sec_match": [
+          "conflict",
+          "low",
+          null
+        ]
+      },
+      "sec_status": "name_check_failed"
     },
     {
       "id": "sec_name_check_borderline",
-      "account": {"name": "Northwind Traders"},
-      "apollo": {"name": "Northwind Traders"},
-      "sec": {"name": "NORTHWIND TRADING CO"},
-      "expect": {
-        "annual_revenue": ["ok", "low", null],
-        "hq_state": ["ok", "low", null],
-        "industry": ["ok", "low", null],
-        "employees": ["ok", "medium", null],
-        "sec_match": ["conflict", "low", null]
+      "account": {
+        "name": "Northwind Traders"
       },
-      "signals": ["founded_year"]
+      "apollo": {
+        "name": "Northwind Traders"
+      },
+      "sec": {
+        "name": "NORTHWIND TRADING CO"
+      },
+      "expect": {
+        "annual_revenue": [
+          "ok",
+          "low",
+          null
+        ],
+        "hq_state": [
+          "ok",
+          "low",
+          null
+        ],
+        "industry": [
+          "ok",
+          "low",
+          null
+        ],
+        "employees": [
+          "ok",
+          "medium",
+          null
+        ],
+        "sec_match": [
+          "conflict",
+          "low",
+          null
+        ]
+      },
+      "signals": [
+        "founded_year"
+      ]
     },
     {
       "id": "crm_domain_points_to_other_company",
@@ -204,59 +471,236 @@
         "employees": 100000
       },
       "expect": {
-        "annual_revenue": ["conflict", "low", 3131266000],
-        "hq_state": ["conflict", "low", "MA"],
-        "industry": ["conflict", "low", "Software"],
-        "employees": ["conflict", "low", 8500],
-        "domain": ["conflict", "low", null]
+        "annual_revenue": [
+          "conflict",
+          "low",
+          3131266000
+        ],
+        "hq_state": [
+          "conflict",
+          "low",
+          "MA"
+        ],
+        "industry": [
+          "conflict",
+          "low",
+          "Software"
+        ],
+        "employees": [
+          "conflict",
+          "low",
+          8500
+        ],
+        "domain": [
+          "conflict",
+          "low",
+          null
+        ]
       },
       "signals": []
     },
     {
       "id": "matches_sec_former_name",
-      "account": {"name": "Google"},
-      "apollo": {"name": "Google"},
-      "sec": {"name": "Alphabet Inc.", "former_names": ["Google Inc."]},
-      "expect": {
-        "annual_revenue": ["ok", "high", null],
-        "hq_state": ["ok", "high", null],
-        "industry": ["ok", "high", null],
-        "employees": ["ok", "medium", null]
+      "account": {
+        "name": "Google"
       },
-      "signals": ["legal_name", "fiscal_year_end", "former_name", "founded_year"]
+      "apollo": {
+        "name": "Google"
+      },
+      "sec": {
+        "name": "Alphabet Inc.",
+        "former_names": [
+          "Google Inc."
+        ]
+      },
+      "expect": {
+        "annual_revenue": [
+          "ok",
+          "high",
+          null
+        ],
+        "hq_state": [
+          "ok",
+          "high",
+          null
+        ],
+        "industry": [
+          "ok",
+          "high",
+          null
+        ],
+        "employees": [
+          "ok",
+          "medium",
+          null
+        ]
+      },
+      "signals": [
+        "legal_name",
+        "fiscal_year_end",
+        "former_name",
+        "founded_year"
+      ]
     },
     {
       "id": "foreign_sec_address",
-      "apollo": {"state": "England", "country": "United Kingdom"},
-      "sec": {"state": "X0"},
+      "apollo": {
+        "state": "England",
+        "country": "United Kingdom"
+      },
+      "sec": {
+        "state": "X0"
+      },
       "expect": {
-        "annual_revenue": ["ok", "high", null],
-        "hq_state": ["unverified", null, null],
-        "industry": ["ok", "high", null],
-        "employees": ["ok", "medium", null]
+        "annual_revenue": [
+          "ok",
+          "high",
+          null
+        ],
+        "hq_state": [
+          "unverified",
+          null,
+          null
+        ],
+        "industry": [
+          "ok",
+          "high",
+          null
+        ],
+        "employees": [
+          "ok",
+          "medium",
+          null
+        ]
       }
     },
     {
       "id": "ticker_not_in_sec",
-      "apollo": {"publicly_traded_symbol": "ZZZZ"},
-      "sec": {"ticker_known": false},
+      "apollo": {
+        "publicly_traded_symbol": "ZZZZ"
+      },
+      "sec": {
+        "ticker_known": false
+      },
       "sec_status": "ticker_not_in_sec",
       "expect": {
-        "annual_revenue": ["ok", "medium", null],
-        "hq_state": ["ok", "medium", null],
-        "industry": ["unverified", null, null],
-        "employees": ["ok", "medium", null]
+        "annual_revenue": [
+          "ok",
+          "medium",
+          null
+        ],
+        "hq_state": [
+          "ok",
+          "medium",
+          null
+        ],
+        "industry": [
+          "unverified",
+          null,
+          null
+        ],
+        "employees": [
+          "ok",
+          "medium",
+          null
+        ]
       }
     },
     {
       "id": "sec_has_no_annual_revenue",
-      "sec": {"revenue": null},
+      "sec": {
+        "revenue": null
+      },
       "expect": {
-        "annual_revenue": ["ok", "medium", null],
-        "hq_state": ["ok", "high", null],
-        "industry": ["ok", "high", null],
-        "employees": ["ok", "medium", null]
+        "annual_revenue": [
+          "ok",
+          "medium",
+          null
+        ],
+        "hq_state": [
+          "ok",
+          "high",
+          null
+        ],
+        "industry": [
+          "ok",
+          "high",
+          null
+        ],
+        "employees": [
+          "ok",
+          "medium",
+          null
+        ]
       }
+    },
+    {
+      "id": "crm_name_blank",
+      "account": {
+        "name": null
+      },
+      "expect": {
+        "annual_revenue": [
+          "ok",
+          "low",
+          null
+        ],
+        "hq_state": [
+          "ok",
+          "low",
+          null
+        ],
+        "industry": [
+          "ok",
+          "low",
+          null
+        ],
+        "employees": [
+          "ok",
+          "low",
+          null
+        ],
+        "domain": [
+          "conflict",
+          "low",
+          null
+        ]
+      },
+      "signals": []
+    },
+    {
+      "id": "apollo_name_blank",
+      "apollo": {
+        "name": null
+      },
+      "expect": {
+        "annual_revenue": [
+          "ok",
+          "low",
+          null
+        ],
+        "hq_state": [
+          "ok",
+          "low",
+          null
+        ],
+        "industry": [
+          "ok",
+          "low",
+          null
+        ],
+        "employees": [
+          "ok",
+          "low",
+          null
+        ],
+        "domain": [
+          "conflict",
+          "low",
+          null
+        ]
+      },
+      "signals": []
     }
   ]
 }
