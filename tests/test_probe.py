@@ -2,8 +2,10 @@ import shutil
 from pathlib import Path
 
 import pytest
+import responses
 
 import probe
+from crm_audit.apollo import ENRICH_URL
 from support import FIXTURES, USER_AGENT
 
 
@@ -50,3 +52,15 @@ def test_probe_reports_credits_spent(
     monkeypatch.setenv("SEC_USER_AGENT", USER_AGENT)
     probe.main(["--domain", "hubspot.com"], root=tmp_path)
     assert "Apollo live calls: 0" in capsys.readouterr().out
+
+
+@responses.activate
+def test_probe_reports_live_calls_when_enrich_fails(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    responses.get(ENRICH_URL, status=500)
+    monkeypatch.setenv("APOLLO_API_KEY", "test-key-not-real")
+    monkeypatch.setenv("SEC_USER_AGENT", USER_AGENT)
+    with pytest.raises(SystemExit, match="HTTP 500"):
+        probe.main(["--domain", "hubspot.com"], root=tmp_path)
+    assert "Apollo live calls: 1" in capsys.readouterr().out

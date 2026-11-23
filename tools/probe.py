@@ -26,8 +26,10 @@ def main(argv: list[str] | None = None, root: Path = ROOT) -> None:
     try:
         sec = SecClient(cache, os.environ.get("SEC_USER_AGENT", ""))
         apollo = ApolloClient(cache, os.environ.get("APOLLO_API_KEY"), max_live_calls=1)
-        org = apollo.enrich(domain)
-        print(f"Apollo live calls: {apollo.live_calls}")
+        try:
+            org = apollo.enrich(domain)
+        finally:
+            print(f"Apollo live calls: {apollo.live_calls}")
         if org is None:
             sys.exit(f"Apollo has no organization for {domain}")
         print("Apollo:")
