@@ -24,14 +24,16 @@ def main(argv: list[str] | None = None, root: Path = ROOT) -> None:
     domain = parser.parse_args(argv).domain
     cache = JsonCache(root / "cache")
     try:
-        org = ApolloClient(cache, os.environ.get("APOLLO_API_KEY"), max_live_calls=1).enrich(domain)
+        sec = SecClient(cache, os.environ.get("SEC_USER_AGENT", ""))
+        apollo = ApolloClient(cache, os.environ.get("APOLLO_API_KEY"), max_live_calls=1)
+        org = apollo.enrich(domain)
+        print(f"Apollo live calls: {apollo.live_calls}")
         if org is None:
             sys.exit(f"Apollo has no organization for {domain}")
         print("Apollo:")
         pprint(asdict(org))
         if org.publicly_traded_symbol is None:
             sys.exit("No ticker from Apollo; stopping before SEC")
-        sec = SecClient(cache, os.environ.get("SEC_USER_AGENT", ""))
         match = sec.cik_for_ticker(org.publicly_traded_symbol)
         if match is None:
             sys.exit(f"No single SEC match for ticker {org.publicly_traded_symbol}")
