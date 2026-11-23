@@ -102,17 +102,29 @@ def row_value(value: object) -> str:
     return "(blank)" if value is None else cell(value)
 
 
-def write_atomic(path: Path, header: list[str], rows: list[dict[str, str]]) -> None:
+def write_atomic(
+    path: Path, header: list[str], rows: list[dict[str, str]], replace: bool = True
+) -> None:
+    """Write via a temp file. With replace=False, fail if the path exists by then."""
     fd, tmp = tempfile.mkstemp(dir=path.parent, suffix=".tmp")
     try:
         with os.fdopen(fd, "w", encoding="utf-8", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=header, lineterminator="\n")
             writer.writeheader()
             writer.writerows(rows)
-        os.replace(tmp, path)
+        if replace:
+            os.replace(tmp, path)
+        else:
+            os.link(tmp, path)
+            Path(tmp).unlink()
     except BaseException:
         Path(tmp).unlink(missing_ok=True)
         raise
+
+
+def ensure_unchanged(path: Path, original: bytes) -> None:
+    if path.read_bytes() != original:
+        raise ValueError(f"{path} changed while apply_fixes was running; nothing written")
 
 
 def mark_approvals(fixes: list[dict[str, str]], pairs: list[str]) -> None:
@@ -166,6 +178,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         load_accounts(args.accounts)
         header, rows = read_rows(args.accounts)
+        fixes_bytes = args.fixes.read_bytes()
         with args.fixes.open(encoding="utf-8-sig", newline="") as f:
             reader = csv.DictReader(f)
             fix_header = list(reader.fieldnames or [])
@@ -183,9 +196,14 @@ def main(argv: list[str] | None = None) -> int:
 
     outcomes = apply(rows, fixes)
     try:
-        write_atomic(args.out, header, rows)
+        ensure_unchanged(args.fixes, fixes_bytes)
+        write_atomic(args.out, header, rows, replace=args.force)
         if args.approve:
+            ensure_unchanged(args.fixes, fixes_bytes)
             write_atomic(args.fixes, fix_header, fixes)
+    except FileExistsError:
+        print(f"error: {args.out} appeared during the run; nothing written", file=sys.stderr)
+        return 1
     except (OSError, ValueError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1

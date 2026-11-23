@@ -256,3 +256,30 @@ def test_fixes_row_with_extra_values_is_rejected_before_writing(
     assert "line 2: more values than columns" in capsys.readouterr().err
     assert not out.exists()
     assert fixes.read_text(encoding="utf-8") == before
+
+
+def test_write_atomic_without_replace_never_clobbers(tmp_path: Path) -> None:
+    out = tmp_path / "out.csv"
+    out.write_text("appeared meanwhile\n", encoding="utf-8")
+    with pytest.raises(FileExistsError):
+        apply_fixes.write_atomic(out, ["a"], [{"a": "1"}], replace=False)
+    assert out.read_text(encoding="utf-8") == "appeared meanwhile\n"
+    assert [p.name for p in tmp_path.iterdir()] == ["out.csv"]
+
+
+def test_fixes_file_changed_during_run_is_an_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    accounts, fixes, out = setup(tmp_path, "A1,hq_state,CA,MA,sec,u,high,r,\n")
+    real_apply = apply_fixes.apply
+
+    def apply_then_edit(*args: object, **kwargs: object) -> object:
+        result = real_apply(*args, **kwargs)  # type: ignore[arg-type]
+        fixes.write_text(FIX_HEADER + "A1,hq_state,CA,MA,sec,u,high,r,n\n", encoding="utf-8")
+        return result
+
+    monkeypatch.setattr(apply_fixes, "apply", apply_then_edit)
+    assert run_approve(accounts, fixes, out, "A1:hq_state") == 1
+    assert "changed while" in capsys.readouterr().err
+    assert not out.exists()
+    assert fixes.read_text(encoding="utf-8").endswith(",n\n")
