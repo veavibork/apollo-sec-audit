@@ -37,15 +37,18 @@ Object keyed by row number. Each row: `cik_str` (int), `ticker`, `title`. HUBS �
 | Need | Key | Example |
 |---|---|---|
 | Legal name | `name` | `HUBSPOT INC` |
-| Former names | `formerNames` | `[]` (list) |
+| Former names | `formerNames` | `[]` (list); entries are `{name, from, to}` with ISO timestamps* |
 | SIC | `sic`, `sicDescription` | `"7372"` (string), `Services-Prepackaged Software` |
 | Fiscal year end | `fiscalYearEnd` | `"1231"` (MMDD) |
 | HQ state | `addresses.business.stateOrCountry` | `MA` |
 | Exchange | `exchanges` | `["NYSE"]` |
 
-- `filings.recent` is parallel arrays (1,003 rows here, back to 2018). Older pages are listed in `filings.files`; 12 months of 8-Ks fit in `recent`.
+\* HubSpot has none. Checked against Meta (CIK 0001326801) on 2026-11-23: `{"name": "Facebook Inc", "from": "2005-05-06T04:00:00.000Z", "to": "2021-10-27T04:00:00.000Z"}`.
+
+- `filings.recent` is parallel arrays (1,003 rows here, back to 2018). Older pages are listed in `filings.files`. SEC's [API docs](https://www.sec.gov/search-filings/edgar-application-programming-interfaces) say `recent` holds "at least one year's of filing or to 1,000 (whichever is more)", so 12 months of 8-Ks always fit.
 - **8-K items are one comma-separated string with no spaces**: `"5.02,7.01,9.01"`. Non-8-K rows have `""`.
-- Filing link: `https://www.sec.gov/Archives/edgar/data/{cik}/{accession without dashes}/{primaryDocument}` → HTTP 200.
+- Filing link: `https://www.sec.gov/Archives/edgar/data/{cik}/{accession without dashes}/{primaryDocument}` → HTTP 200 with the CIK padded or unpadded. We use unpadded, as SEC does.
+- Tickers: 10,397 of 10,398 use dashes for share classes (`BRK-B`). One uses a dot (`SHO.PRI`). No ticker maps to two CIKs.
 - Data conflict seen: Apollo says `nasdaq`, SEC says `NYSE`.
 
 ## SEC `companyfacts/CIK0001404655.json`
