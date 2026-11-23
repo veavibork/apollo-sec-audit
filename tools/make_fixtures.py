@@ -1,4 +1,4 @@
-"""Build committed test fixtures from the probe's cached raw responses (see docs/adr/0006)."""
+"""Build committed test fixtures from the probe's cached raw responses (see docs/adr/0001)."""
 
 import json
 from pathlib import Path
