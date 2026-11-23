@@ -94,3 +94,24 @@ def test_former_name_equal_to_current_name_is_dropped() -> None:
     )
     former = [s.detail for s in sec_signals(company, RULES, AS_OF) if s.kind == "former_name"]
     assert former == ["HubSpot Marketing (until 2010-01-01)"]
+
+
+@pytest.mark.parametrize(
+    ("former", "kept"),
+    [
+        ("NVIDIA CORP/CA", False),
+        ("DELTA AIR LINES INC /DE/", False),
+        ("ACME INC/ FA", False),
+        ("APPLE COMPUTER INC/ FA", True),
+    ],
+)
+def test_edgar_state_suffix_is_not_a_rename(former: str, kept: bool) -> None:
+    names = {
+        "NVIDIA CORP/CA": "NVIDIA CORP",
+        "DELTA AIR LINES INC /DE/": "DELTA AIR LINES, INC.",
+        "ACME INC/ FA": "Acme Inc.",
+        "APPLE COMPUTER INC/ FA": "Apple Inc.",
+    }
+    company = replace(hubspot(), name=names[former], former_names=(FormerName(former, None, None),))
+    found = [s for s in sec_signals(company, RULES, AS_OF) if s.kind == "former_name"]
+    assert bool(found) is kept
