@@ -11,7 +11,7 @@ All judgment about sources, tolerances and confidence lives in code and `scripts
 
 ## Setup
 
-Run every command from the repository root, with the project's Python environment (`pip install -e ".[dev]"`).
+Run every command from the repository root, with the project's Python environment (`pip install -e ".[dev]"`). If the repository has a `.venv`, use its interpreter, `.venv/Scripts/python` on Windows or `.venv/bin/python` elsewhere, in place of `python` in the commands below.
 
 - `SEC_USER_AGENT` must be set (`"Name email@example.com"`). SEC requires it.
 - `APOLLO_API_KEY` is needed only for `--live`. Never print or echo either value.
@@ -39,7 +39,11 @@ python skills/crm-account-audit/scripts/audit.py --live
 
 The run stops at `APOLLO_MAX_LIVE_CALLS` (default 15). If it stops at the cap, report that and ask before raising the cap with `--max-live-calls N`.
 
-If `audit.py` refuses because `reports/proposed_fixes.csv` holds approvals, tell the user. Don't pass `--force` unless they agree to discard those approvals.
+If `audit.py` refuses because `reports/proposed_fixes.csv` holds approvals, an earlier round is pending. List the approved rows, then offer three choices:
+
+- **Review the existing results** with `summary.py`. This is free and read-only, but it shows the earlier audit.
+- **Apply the pending approvals** (step 5), then start a new round on the updated file (see the end of step 5).
+- **Start over** with `audit.py --force`, which discards those approvals. Only do this if the user says to.
 
 ### 3. Read the summary
 
