@@ -22,6 +22,7 @@ from crm_audit.rules import load_industries
 from crm_audit.states import state_code
 
 APPROVED = frozenset({"y", "yes"})
+APPLICABLE_CONFIDENCE = frozenset({"high", "medium"})
 INDUSTRY_LABELS = frozenset(label for _, _, label in load_industries().ranges)
 PARSERS = {
     "annual_revenue": parse_revenue,
@@ -69,6 +70,11 @@ def apply_one(
     row = by_id.get(account_id)
     if row is None:
         return False, "account not in the accounts file"
+    if text(fix, "confidence").casefold() not in APPLICABLE_CONFIDENCE:
+        return (
+            False,
+            "low-confidence items can't be applied; a person edits the CRM directly",
+        )
     if field not in EDITABLE:
         return False, f"field {field!r} can't be edited"
     if (account_id, field) in done:
@@ -107,14 +113,16 @@ def _create_new(tmp: Path, path: Path) -> None:
     try:
         os.link(tmp, path)
     except FileExistsError:
-        raise
+        raise  # an existing file must never fall through to the fallback below
     except OSError:
-        f = path.open("xb")
+        created = False
         try:
-            with f:
+            with path.open("xb") as f:
+                created = True
                 f.write(tmp.read_bytes())
         except BaseException:
-            path.unlink(missing_ok=True)
+            if created:
+                path.unlink(missing_ok=True)
             raise
 
 

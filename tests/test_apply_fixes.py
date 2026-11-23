@@ -368,3 +368,12 @@ def test_failed_close_in_fallback_create_leaves_no_partial_file(
     with pytest.raises(OSError, match="No space left"):
         apply_fixes.write_atomic(out, ["a"], [{"a": "1"}], replace=False)
     assert list(tmp_path.iterdir()) == []
+
+
+def test_low_confidence_rows_are_never_applied(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    accounts, fixes, out = setup(tmp_path, "A1,hq_state,CA,MA,apollo,,low,r,y\n")
+    assert run(accounts, fixes, out) == 0
+    assert "low-confidence" in capsys.readouterr().out
+    assert rows(out)["A1"]["hq_state"] == "CA"
