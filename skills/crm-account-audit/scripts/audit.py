@@ -1,6 +1,7 @@
 """Audit CRM accounts against Apollo and SEC EDGAR, then write reports."""
 
 import argparse
+import csv
 import os
 import sys
 from datetime import date
@@ -32,11 +33,16 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
         "--live", action="store_true", help="allow live Apollo calls (one credit each)"
     )
     parser.add_argument("--max-live-calls", type=int, default=None)
+    parser.add_argument(
+        "--force", action="store_true", help="overwrite a proposed_fixes.csv that has approvals"
+    )
     return parser.parse_args(argv)
 
 
 def max_live_calls(flag: int | None) -> int:
     if flag is not None:
+        if flag < 0:
+            raise ValueError("--max-live-calls must be 0 or more")
         return flag
     raw = os.environ.get("APOLLO_MAX_LIVE_CALLS", "").strip()
     if not raw:
@@ -53,9 +59,20 @@ def uncached_domains(accounts: list[Account], cache: JsonCache) -> list[str]:
             domain = normalize_domain(account.domain or "")
         except ValueError:
             continue
-        if cache.get(cache_key(domain)) is None and domain not in domains:
+        try:
+            cached = cache.get(cache_key(domain))
+        except SourceError:
+            continue
+        if cached is None and domain not in domains:
             domains.append(domain)
     return domains
+
+
+def has_approvals(path: Path) -> bool:
+    if not path.exists():
+        return False
+    with path.open(encoding="utf-8-sig", newline="") as f:
+        return any((row.get("approved") or "").strip() for row in csv.DictReader(f))
 
 
 def audit_one(
@@ -92,12 +109,19 @@ def main(argv: list[str] | None = None) -> int:
         cap = max_live_calls(args.max_live_calls)
         cache = JsonCache(args.cache)
         sec = SecClient(cache, os.environ.get("SEC_USER_AGENT", ""))
+        key = os.environ.get("APOLLO_API_KEY", "").strip() or None
+        if args.live and key is None:
+            raise ValueError("--live needs APOLLO_API_KEY in the environment or .env")
+        fixes_path = args.out / "proposed_fixes.csv"
+        if not args.force and has_approvals(fixes_path):
+            raise ValueError(
+                f"{fixes_path} has approvals that a rerun would erase; "
+                "run apply_fixes.py first, or pass --force"
+            )
+        apollo = ApolloClient(cache, key if args.live else None, max_live_calls=cap)
     except (OSError, ValueError, SourceError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
-    apollo = ApolloClient(
-        cache, os.environ.get("APOLLO_API_KEY") if args.live else None, max_live_calls=cap
-    )
 
     pending = uncached_domains(accounts, cache)
     print(f"{len(accounts)} accounts; {len(pending)} domains not in the Apollo cache.")

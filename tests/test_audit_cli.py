@@ -103,3 +103,50 @@ def test_missing_user_agent_fails_fast(
     monkeypatch.setenv("SEC_USER_AGENT", "")
     assert run() == 1
     assert "SEC_USER_AGENT" in capsys.readouterr().err
+
+
+@responses.activate
+def test_corrupt_apollo_cache_fails_only_that_account(
+    workspace: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    (workspace / "cache" / "apollo" / "example.com.json").write_text("{bad", encoding="utf-8")
+    assert run() == 0
+    assert "A2: corrupt cache file" in capsys.readouterr().out
+
+
+@responses.activate
+def test_live_without_key_fails_before_any_work(
+    workspace: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setenv("APOLLO_API_KEY", "")
+    assert run("--live") == 1
+    assert "APOLLO_API_KEY" in capsys.readouterr().err
+    assert not (workspace / "reports").exists()
+
+
+def test_negative_cap_is_an_error(workspace: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    assert run("--live", "--max-live-calls", "-1") == 1
+    assert "max-live-calls" in capsys.readouterr().err
+
+
+@responses.activate
+def test_rerun_keeps_approvals_unless_forced(
+    workspace: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert run() == 0
+    fixes_path = workspace / "reports" / "proposed_fixes.csv"
+    rows = read_csv(fixes_path)
+    rows[0]["approved"] = "y"
+    with fixes_path.open("w", encoding="utf-8", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=list(rows[0]), lineterminator="\n")
+        writer.writeheader()
+        writer.writerows(rows)
+    approved = fixes_path.read_text(encoding="utf-8")
+
+    assert run("--live") == 1
+    assert "has approvals" in capsys.readouterr().err
+    assert fixes_path.read_text(encoding="utf-8") == approved
+    assert len(responses.calls) == 0
+
+    assert run("--force") == 0
+    assert read_csv(fixes_path)[0]["approved"] == ""
