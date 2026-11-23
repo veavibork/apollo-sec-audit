@@ -172,6 +172,9 @@ def main(argv: list[str] | None = None) -> int:
             if not {*FIX_COLUMNS, "approved"} <= set(fix_header):
                 raise ValueError(f"{args.fixes}: missing columns; expected the audit's format")
             fixes = list(reader)
+        for line, fix in enumerate(fixes, start=2):
+            if None in fix:
+                raise ValueError(f"{args.fixes} line {line}: more values than columns")
         if args.approve:
             mark_approvals(fixes, args.approve)
     except (OSError, ValueError) as exc:

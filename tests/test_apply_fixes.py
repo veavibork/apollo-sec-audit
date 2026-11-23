@@ -245,3 +245,14 @@ def test_output_shows_decoded_account_id(
     )
     run(accounts, fixes, out)
     assert "line 2 =A3 applied" in capsys.readouterr().out
+
+
+def test_fixes_row_with_extra_values_is_rejected_before_writing(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    accounts, fixes, out = setup(tmp_path, "A1,hq_state,CA,MA,sec,u,high,r,,surprise\n")
+    before = fixes.read_text(encoding="utf-8")
+    assert run_approve(accounts, fixes, out, "A1:hq_state") == 1
+    assert "line 2: more values than columns" in capsys.readouterr().err
+    assert not out.exists()
+    assert fixes.read_text(encoding="utf-8") == before
