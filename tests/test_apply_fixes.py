@@ -316,3 +316,20 @@ def test_exclusive_create_works_without_hard_links(
         apply_fixes.write_atomic(out, ["a"], [{"a": "2"}], replace=False)
     assert out.read_text(encoding="utf-8") == "a\n1\n"
     assert [p.name for p in tmp_path.iterdir()] == ["out.csv"]
+
+
+def test_failed_fallback_create_leaves_no_partial_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def no_links(src: object, dst: object) -> None:
+        raise OSError(1, "Incorrect function")
+
+    def broken_read(self: Path) -> bytes:
+        raise OSError(5, "read failed")
+
+    monkeypatch.setattr("os.link", no_links)
+    monkeypatch.setattr(Path, "read_bytes", broken_read)
+    out = tmp_path / "out.csv"
+    with pytest.raises(OSError):
+        apply_fixes.write_atomic(out, ["a"], [{"a": "1"}], replace=False)
+    assert list(tmp_path.iterdir()) == []

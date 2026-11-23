@@ -110,7 +110,12 @@ def _create_new(tmp: Path, path: Path) -> None:
         raise
     except OSError:
         with path.open("xb") as f:
-            f.write(tmp.read_bytes())
+            try:
+                f.write(tmp.read_bytes())
+            except BaseException:
+                f.close()
+                path.unlink(missing_ok=True)
+                raise
 
 
 def write_atomic(
