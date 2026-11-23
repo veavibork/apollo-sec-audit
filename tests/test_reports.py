@@ -97,3 +97,9 @@ def test_write_reports(tmp_path: Path) -> None:
     assert data["as_of"] == "2026-11-20"
     assert data["accounts"][0]["signals"][0]["date"] == "2026-10-09"
     assert data["accounts"][1] == {"error": "not a domain", "account": error.account.__dict__}
+
+
+@pytest.mark.parametrize("text", ["'=x", "''", "'-Other"])
+def test_leading_apostrophe_round_trips(text: str) -> None:
+    assert cell(text).startswith("''")
+    assert uncell(cell(text)) == text

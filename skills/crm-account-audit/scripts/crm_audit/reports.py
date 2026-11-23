@@ -50,13 +50,13 @@ def cell(value: object) -> str:
     if isinstance(value, date):
         return value.isoformat()
     text = str(value)
-    if isinstance(value, str) and text.startswith(FORMULA_PREFIXES):
+    if isinstance(value, str) and text.startswith((*FORMULA_PREFIXES, "'")):
         return "'" + text
     return text
 
 
 def uncell(text: str) -> str:
-    if text.startswith("'") and text[1:].startswith(FORMULA_PREFIXES):
+    if text.startswith("'") and text[1:].startswith((*FORMULA_PREFIXES, "'")):
         return text[1:]
     return text
 
