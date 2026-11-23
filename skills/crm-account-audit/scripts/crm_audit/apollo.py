@@ -3,7 +3,7 @@ from typing import Any
 
 import requests
 
-from crm_audit.cache import JsonCache
+from crm_audit.cache import WINDOWS_RESERVED, JsonCache
 from crm_audit.coerce import as_float, as_int, as_str, as_str_tuple
 from crm_audit.errors import LiveCallLimitReached, SourceError
 from crm_audit.fetch import get_json
@@ -24,6 +24,14 @@ def normalize_domain(raw: str) -> str:
     if not DOMAIN_PATTERN.fullmatch(text):
         raise ValueError(f"not a domain: {raw!r}")
     return text
+
+
+def cache_key(domain: str) -> str:
+    """'con.com' -> 'apollo/con_.com.json'. Domain labels can't hold '_', so names stay unique."""
+    first, _, rest = domain.partition(".")
+    if first in WINDOWS_RESERVED:
+        first += "_"
+    return f"apollo/{first}.{rest}.json"
 
 
 def trim(raw: Any) -> ApolloOrg | None:
@@ -72,7 +80,7 @@ class ApolloClient:
     def enrich(self, domain: str) -> ApolloOrg | None:
         """Cache first. Live calls count toward the cap before they are sent."""
         domain = normalize_domain(domain)
-        key = f"apollo/{domain}.json"
+        key = cache_key(domain)
         raw = self._cache.get(key)
         if raw is None:
             if self._api_key is None:
