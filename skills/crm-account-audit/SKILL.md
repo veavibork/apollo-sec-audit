@@ -55,7 +55,7 @@ This prints compact JSON: `fixes`, `review`, `events` (8-K filings), `event_coun
 
 Each account's `sec_status` explains its SEC link:
 
-- `matched`: Apollo's ticker found an SEC filer whose name passed the check.
+- `matched`: Apollo's ticker found an SEC filer whose name passed the check, or was borderline. A borderline match uses SEC data at low confidence and adds a `sec_match` review item.
 - `no_ticker`: Apollo has no ticker for this domain. The company is private, or the domain belongs to a brand whose listed parent has another name (e.g. google.com → Alphabet).
 - `ticker_not_in_sec`: Apollo's ticker isn't in SEC's ticker list.
 - `name_check_failed`: the ticker's SEC name didn't match the company, so SEC data wasn't used.

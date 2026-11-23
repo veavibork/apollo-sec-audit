@@ -48,3 +48,8 @@ def test_skill_explains_every_sec_status() -> None:
 
 def test_skill_says_to_use_precomputed_counts() -> None:
     assert "event_counts" in SKILL
+
+
+def test_skill_says_matched_includes_borderline() -> None:
+    line = next(x for x in SKILL.splitlines() if x.startswith("- `matched`"))
+    assert "borderline" in line
