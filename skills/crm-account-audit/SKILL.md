@@ -55,7 +55,7 @@ Lead with what matters most, in this order:
 
 1. **Proposed fixes**, high confidence first. For each: account, field, current → proposed value, source, and the rationale. Link the evidence URL when there is one.
 2. **Needs review** (low confidence). Explain why each one isn't proposed: industry conflicts always go to review, a name check failed or was borderline, or Apollo's SIC codes disagree.
-3. **Signals**: recent 8-K events, newest first, with date, account, what the item means and the filing link. Mention fiscal year ends and former names where they help (budget timing, duplicate records).
+3. **Signals**: recent 8-K events with date, account, what the item means and the filing link. Lead with the rarer items (2.05 restructuring, 2.01 acquisition, 1.01 material agreement), then executive changes (5.02). When there are many, group by account and give counts with the latest date instead of listing every filing. Mention fiscal year ends and former names where they help (budget timing, duplicate records).
 4. **Errors**: accounts that couldn't be audited, and why.
 
 End by asking which fixes to approve, by account and field.
