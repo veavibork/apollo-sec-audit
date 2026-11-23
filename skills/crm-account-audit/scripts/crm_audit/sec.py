@@ -23,13 +23,13 @@ REVENUE_CONCEPTS = (
 )
 ANNUAL_DAYS = range(350, 381)
 MIN_INTERVAL_SECONDS = 0.125
-CIK_PATTERN = re.compile(r"^\d{10}$")
+CIK_PATTERN = re.compile(r"^[0-9]{10}$")
 TICKER_PATTERN = re.compile(r"^[A-Z0-9]{1,6}(?:-[A-Z0-9]{1,3})?$")
-ACCESSION_PATTERN = re.compile(r"^\d{10}-\d{2}-\d{6}$")
+ACCESSION_PATTERN = re.compile(r"^[0-9]{10}-[0-9]{2}-[0-9]{6}$")
 
 
 def ticker_candidates(raw: str) -> tuple[str, ...]:
-    """'brk.b' -> ('BRK.B', 'BRK-B'). SEC mostly uses dashes but lists a few with dots."""
+    """'brk.b' -> ('BRK.B', 'BRK-B'): the given form first, then SEC's dash form."""
     upper = raw.strip().upper()
     dashed = upper.replace(".", "-").replace("/", "-")
     if not TICKER_PATTERN.fullmatch(dashed):
@@ -99,7 +99,7 @@ def parse_filings(cik: str, recent: Any) -> tuple[Filing, ...]:
                 filing_date=filed_d,
                 accession=acc_s,
                 items=item_codes,
-                url=index + quote(doc_s) if doc_s else index,
+                url=index + quote(doc_s, safe="") if doc_s else index,
                 index_url=index,
             )
         )

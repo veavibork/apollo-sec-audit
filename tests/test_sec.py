@@ -337,3 +337,21 @@ def test_throttle_sleeps_only_for_remaining_interval() -> None:
     fake.now += 1.0
     throttle.wait()
     assert fake.slept == [pytest.approx(0.075)]
+
+
+def test_document_with_slashes_cannot_leave_filing_folder() -> None:
+    recent = {
+        "form": ["8-K"],
+        "filingDate": ["2026-01-05"],
+        "accessionNumber": ["0001193125-26-000001"],
+        "items": ["5.02"],
+        "primaryDocument": ["../../../../x.htm"],
+    }
+    (filing,) = parse_filings(HUBS_CIK, recent)
+    assert filing.url.startswith(filing.index_url)
+    assert "/" not in filing.url.removeprefix(filing.index_url)
+
+
+def test_normalize_cik_rejects_non_ascii_digits() -> None:
+    with pytest.raises(ValueError, match="not a CIK"):
+        normalize_cik("１４０４６５５")
