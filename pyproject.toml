@@ -28,7 +28,7 @@ where = ["skills/crm-account-audit/scripts"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["skills/crm-account-audit/scripts"]
+pythonpath = ["skills/crm-account-audit/scripts", "tools"]
 addopts = "--disable-socket"
 
 [tool.ruff]
@@ -38,12 +38,15 @@ target-version = "py312"
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP", "S", "SIM"]
 
+[tool.ruff.lint.isort]
+known-first-party = ["crm_audit", "support", "probe"]
+
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S101"]
 
 [tool.mypy]
 python_version = "3.12"
 strict = true
-mypy_path = "skills/crm-account-audit/scripts"
+mypy_path = "skills/crm-account-audit/scripts,tests,tools"
 explicit_package_bases = true
 files = ["skills/crm-account-audit/scripts", "tests", "tools"]
