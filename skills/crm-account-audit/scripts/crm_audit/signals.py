@@ -1,6 +1,7 @@
 import calendar
 from datetime import date, timedelta
 
+from crm_audit.matching import normalize_name
 from crm_audit.models import SecCompany, Signal
 from crm_audit.rules import Rules
 
@@ -20,7 +21,10 @@ def sec_signals(company: SecCompany, rules: Rules, as_of: date) -> tuple[Signal,
     fye = fiscal_year_end(company.fiscal_year_end)
     if fye is not None:
         signals.append(Signal("fiscal_year_end", fye, "sec", None, None))
+    current = normalize_name(company.name, rules.name_match.strip_words)
     for former in company.former_names:
+        if normalize_name(former.name, rules.name_match.strip_words) == current:
+            continue
         until = f" (until {former.to_date.isoformat()})" if former.to_date else ""
         signals.append(Signal("former_name", f"{former.name}{until}", "sec", former.to_date, None))
     since = as_of - timedelta(days=rules.signal_lookback_days)

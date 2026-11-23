@@ -81,3 +81,16 @@ def test_former_names_become_signals() -> None:
     assert [(s.detail, s.date) for s in former] == [
         ("Facebook Inc (until 2021-10-27)", date(2021, 10, 27))
     ]
+
+
+def test_former_name_equal_to_current_name_is_dropped() -> None:
+    company = replace(
+        hubspot(),
+        former_names=(
+            FormerName("HubSpot, Inc.", None, date(2026, 11, 16)),
+            FormerName("HUBSPOT INC", None, date(2026, 1, 1)),
+            FormerName("HubSpot Marketing", None, date(2010, 1, 1)),
+        ),
+    )
+    former = [s.detail for s in sec_signals(company, RULES, AS_OF) if s.kind == "former_name"]
+    assert former == ["HubSpot Marketing (until 2010-01-01)"]
