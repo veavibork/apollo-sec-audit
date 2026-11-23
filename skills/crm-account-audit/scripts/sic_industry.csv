@@ -1,0 +1,37 @@
+sic_start,sic_end,label
+100,999,Agriculture
+1000,1499,Mining
+1300,1399,Oil & Gas
+1500,1799,Construction
+2000,3999,Manufacturing
+2000,2099,Food & Beverage
+2800,2899,Chemicals
+2830,2836,Pharmaceuticals
+2900,2999,Oil & Gas
+3570,3579,Computer Hardware
+3600,3699,Electronics
+3670,3679,Semiconductors
+3710,3716,Automotive
+3720,3729,Aerospace & Defense
+3760,3769,Aerospace & Defense
+3812,3812,Aerospace & Defense
+3840,3851,Medical Devices
+4000,4799,Transportation
+4800,4899,Telecommunications
+4830,4841,Media & Entertainment
+4900,4999,Utilities
+5000,5199,Wholesale
+5200,5999,Retail
+5800,5899,Restaurants
+6000,6199,Banking
+6200,6299,Financial Services
+6300,6499,Insurance
+6500,6599,Real Estate
+6700,6799,Financial Services
+6798,6798,Real Estate
+7000,8999,Services
+7370,7379,Software
+7800,7999,Media & Entertainment
+8000,8099,Healthcare Services
+8700,8799,Professional Services
+9100,9999,Other

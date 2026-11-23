@@ -1,0 +1,39 @@
+# Audit rules. Edit here, not in code. See docs/adr/0004-audit-rules.md.
+
+[precedence]
+annual_revenue = ["sec", "apollo"]
+hq_state = ["sec", "apollo"]
+industry = ["sec"]
+employees = ["apollo"]
+
+[review_on_conflict]
+fields = ["industry"]
+
+[tolerance]
+annual_revenue = 0.15
+employees = 0.15
+
+[name_match]
+pass = 90
+borderline = 70
+strip_words = [
+    "inc", "incorporated", "corp", "corporation", "co", "company",
+    "ltd", "limited", "llc", "plc", "lp", "the",
+]
+
+[sec]
+revenue_concepts = [
+    "Revenues",
+    "RevenueFromContractWithCustomerExcludingAssessedTax",
+    "SalesRevenueNet",
+]
+
+[signals]
+lookback_days = 365
+forms = ["8-K"]
+
+[signals.items]
+"5.02" = "Executive change"
+"2.01" = "Completed acquisition"
+"2.05" = "Restructuring or layoffs"
+"1.01" = "Material agreement"
