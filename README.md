@@ -25,7 +25,7 @@ Requirements: Python 3.12.
 ```bash
 python -m venv .venv
 source .venv/bin/activate        # macOS/Linux
-# .venv\Scriptsctivate         # Windows (PowerShell or cmd)
+# .venv\Scripts\activate         # Windows (PowerShell or cmd)
 pip install -e ".[dev]"
 cp .env.example .env             # set SEC_USER_AGENT="Your Name you@example.com"
 ```
