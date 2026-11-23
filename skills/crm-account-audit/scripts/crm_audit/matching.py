@@ -64,14 +64,16 @@ def find_sec(
     if match is None:
         return SecLookup("ticker_not_in_sec", ticker=ticker)
     company = sec.company(match.cik)
-    revenue = sec.annual_revenue(match.cik, rules.revenue_concepts)
-    name = org.name or crm_name or ""
     candidates = [company.name, *(f.name for f in company.former_names)]
+    name_check = check_name(org.name or crm_name or "", candidates, rules.name_match)
+    revenue = None
+    if name_check.verdict != FAIL:
+        revenue = sec.annual_revenue(match.cik, rules.revenue_concepts)
     return SecLookup(
         "matched",
         ticker=ticker,
         match=match,
         company=company,
         revenue=revenue,
-        name_check=check_name(name, candidates, rules.name_match),
+        name_check=name_check,
     )
