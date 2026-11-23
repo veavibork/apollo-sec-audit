@@ -68,7 +68,16 @@ Only when the user names specific rows, for example "approve HubSpot revenue and
 python skills/crm-account-audit/scripts/apply_fixes.py --approve A001:annual_revenue --approve A002:hq_state
 ```
 
-This records the approvals in `reports/proposed_fixes.csv` and writes `data/accounts.updated.csv`. The input file is never changed. Show the user the applied and skipped rows with their reasons.
+This writes `data/accounts.updated.csv`, then records the approvals in `reports/proposed_fixes.csv`. The input file is never changed. Show the user the applied and skipped rows with their reasons.
+
+`apply_fixes.py` won't replace an existing `data/accounts.updated.csv`, because that file may hold an earlier round. For a second round, audit the updated file and apply onto a new output:
+
+```
+python skills/crm-account-audit/scripts/audit.py --force --accounts data/accounts.updated.csv
+python skills/crm-account-audit/scripts/apply_fixes.py --accounts data/accounts.updated.csv --out data/accounts.updated-2.csv --approve ...
+```
+
+`--force` on the audit discards the previous round's approvals, so use it only after that round has been applied. `--approve` refuses to overwrite a reviewer's `n` in the fixes file; tell the user if that happens.
 
 ## Rules
 

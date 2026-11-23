@@ -16,6 +16,7 @@ from crm_audit.accounts import (
     parse_text,
     read_rows,
 )
+from crm_audit.console import safe_output
 from crm_audit.reports import FIX_COLUMNS, cell, uncell
 from crm_audit.rules import load_industries
 from crm_audit.states import state_code
@@ -57,10 +58,14 @@ def text(fix: dict[str, str], key: str) -> str:
     return (fix.get(key) or "").strip()
 
 
+def fix_account_id(fix: dict[str, str]) -> str:
+    return uncell(text(fix, "account_id")).strip()
+
+
 def apply_one(
     fix: dict[str, str], by_id: dict[str, dict[str, str]], done: set[tuple[str, str]]
 ) -> tuple[bool, str]:
-    account_id, field = uncell(text(fix, "account_id")), text(fix, "field")
+    account_id, field = fix_account_id(fix), text(fix, "field")
     row = by_id.get(account_id)
     if row is None:
         return False, "account not in the accounts file"
@@ -89,7 +94,7 @@ def apply(rows: list[dict[str, str]], fixes: list[dict[str, str]]) -> list[Outco
         if text(fix, "approved").casefold() not in APPROVED:
             continue
         applied, reason = apply_one(fix, by_id, done)
-        outcomes.append(Outcome(line, text(fix, "account_id"), text(fix, "field"), applied, reason))
+        outcomes.append(Outcome(line, fix_account_id(fix), text(fix, "field"), applied, reason))
     return outcomes
 
 
@@ -111,18 +116,25 @@ def write_atomic(path: Path, header: list[str], rows: list[dict[str, str]]) -> N
 
 
 def mark_approvals(fixes: list[dict[str, str]], pairs: list[str]) -> None:
-    """Set approved=y on rows named 'ACCOUNT:FIELD'. ValueError if any pair matches no row."""
-    keys = {(uncell(text(f, "account_id")), text(f, "field")): f for f in fixes}
-    unknown = []
+    """Set approved=y on rows named 'ACCOUNT:FIELD'. ValueError if any pair can't be approved."""
+    keys = {(fix_account_id(f), text(f, "field")): f for f in fixes}
+    unknown, refused = [], []
     for pair in pairs:
-        account_id, _, field = pair.partition(":")
+        account_id, _, field = pair.rpartition(":")
         fix = keys.get((account_id.strip(), field.strip()))
         if fix is None:
             unknown.append(pair)
+        elif text(fix, "approved") and text(fix, "approved").casefold() not in APPROVED:
+            refused.append(f"{pair} (already marked {text(fix, 'approved')!r})")
         else:
             fix["approved"] = "y"
     if unknown:
         raise ValueError(f"--approve matches no proposed fix: {', '.join(unknown)}")
+    if refused:
+        raise ValueError(
+            f"--approve would override a reviewer's entry: {', '.join(refused)}; "
+            "clear it in the fixes file first"
+        )
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -137,9 +149,19 @@ def main(argv: list[str] | None = None) -> int:
         metavar="ACCOUNT:FIELD",
         help="record approval of this row in the fixes file, then apply",
     )
+    parser.add_argument("--force", action="store_true", help="replace an existing --out file")
     args = parser.parse_args(argv)
+    safe_output()
     if args.out.resolve() == args.accounts.resolve():
         print("error: --out must differ from --accounts", file=sys.stderr)
+        return 1
+    if args.out.exists() and not args.force:
+        print(
+            f"error: {args.out} already exists and may hold an earlier round's fixes. "
+            "For another round, pass --accounts with that file and a new --out; "
+            "pass --force to replace it.",
+            file=sys.stderr,
+        )
         return 1
     try:
         load_accounts(args.accounts)
@@ -152,13 +174,18 @@ def main(argv: list[str] | None = None) -> int:
             fixes = list(reader)
         if args.approve:
             mark_approvals(fixes, args.approve)
-            write_atomic(args.fixes, fix_header, fixes)
     except (OSError, ValueError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
 
     outcomes = apply(rows, fixes)
-    write_atomic(args.out, header, rows)
+    try:
+        write_atomic(args.out, header, rows)
+        if args.approve:
+            write_atomic(args.fixes, fix_header, fixes)
+    except (OSError, ValueError) as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
 
     applied = [o for o in outcomes if o.applied]
     print(f"Wrote {args.out}: {len(applied)} applied, {len(outcomes) - len(applied)} skipped.")

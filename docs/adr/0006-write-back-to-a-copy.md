@@ -12,6 +12,8 @@ KICKOFF says a person approves every change. CLAUDE.md says: propose changes, ne
   - the proposed value parses for its field (number, two-letter US state, an industry label from `sic_industry.csv`);
   - only one approved row per account and field.
 - Skipped rows are listed with a reason. The output is written to a temp file and renamed, so a failure never leaves a half-written file.
+- An existing output file is never replaced without `--force`, because it may hold an earlier round. A second round reads the previous output with `--accounts` and writes a new `--out`.
+- `--approve ACCOUNT:FIELD` records approvals only after the output is written, so a failed write never leaves approvals that weren't applied. It refuses to turn a reviewer's `n` into `y`.
 - Rerunning `audit.py` refuses to replace a `proposed_fixes.csv` that holds approvals, unless `--force` is passed. The check runs before any Apollo call.
 - Every CSV cell that a spreadsheet would run as a formula (leading `=`, `+`, `-`, `@`, tab, CR, or `'`) gets a `'` prefix; `apply_fixes.py` removes it when reading.
 
