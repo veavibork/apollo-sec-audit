@@ -27,7 +27,7 @@ HTTP 200, 40 KB, one top-level key: `organization` (58 keys).
 - Size: the bulk is `current_technologies` (28 KB), not subsidiaries (`suborganizations` is 3.7 KB).
 - Response headers show request counters and limits, not credits: `x-24-hour-usage`, `x-hourly-usage`, `x-minute-usage`, `x-rate-limit-24-hour: 600`, `x-rate-limit-hourly: 200`, `x-rate-limit-minute: 50`.
 - **Still not verified:** the response for a domain Apollo doesn't know. All 11 domains in the Step 4 run returned an organization. The client caches `{"organization": null}` as "no match" and refuses any body without an `organization` key.
-- Credits: **one enrich call costs one credit.**
+- Credits: **one enrich call costs one credit.** The Apollo UI went from 1 to 2 of 85 used after this single call.
 
 ### Apollo industry and SIC codes (Apollo help center, saved by hand 2026-11-23; the site returns 403 to automated fetches)
 
@@ -35,7 +35,7 @@ HTTP 200, 40 KB, one top-level key: `organization` (58 keys).
 - SIC vocabulary: "The descriptions have been sourced from the Division of Corporation Finance: Standard Industrial Classification (SIC) Code List." All 131 codes on Apollo's filter list are on SEC's list and map through `sic_industry.csv`.
 - Assignment: "Apollo determines SIC and NAICS codes from multiple sources, and this information may be updated regularly." So a company's codes are Apollo's own judgment, not its SEC filing: medium confidence.
 - HubSpot's enrich response had `sic_codes: ["7375", "7372"]`. `7375` isn't on the filter list, so a response can hold codes the list doesn't show.
-- No published mapping from Apollo's industry labels to SIC or NAICS was found. The Apollo UI went from 1 to 2 of 85 used after this single call.
+- No published mapping from Apollo's industry labels to SIC or NAICS was found.
 
 ## SEC `company_tickers.json`
 
