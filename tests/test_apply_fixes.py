@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 
 import apply_fixes
-from crm_audit.reports import FIX_COLUMNS
+from crm_audit.reports import FIX_COLUMNS, cell
 
 ACCOUNTS = (
     "account_id,name,domain,annual_revenue,hq_state,industry,employees\n"
@@ -122,3 +122,33 @@ def test_bad_accounts_file_writes_nothing(tmp_path: Path, extra_row: str) -> Non
     accounts.write_text(ACCOUNTS + extra_row, encoding="utf-8")
     assert run(accounts, fixes, out) == 1
     assert not out.exists()
+
+
+def test_formula_prefixed_account_id_is_decoded(tmp_path: Path) -> None:
+    accounts, fixes, out = setup(tmp_path, "")
+    accounts.write_text(ACCOUNTS + "=A3,Acme,acme.com,1,TX,Software,10\n", encoding="utf-8")
+    fixes.write_text(
+        FIX_HEADER + f"{cell('=A3')},hq_state,TX,CA,sec,u,high,r,y\n", encoding="utf-8"
+    )
+    assert run(accounts, fixes, out) == 0
+    assert rows(out)["=A3"]["hq_state"] == "CA"
+
+
+def test_formula_prefixed_current_value_round_trips(tmp_path: Path) -> None:
+    accounts, fixes, out = setup(tmp_path, "")
+    accounts.write_text(ACCOUNTS.replace("TX,Software,5", "TX,-Other,5"), encoding="utf-8")
+    fixes.write_text(
+        FIX_HEADER + f"A2,industry,{cell('-Other')},Software,sec,u,high,r,y\n", encoding="utf-8"
+    )
+    assert run(accounts, fixes, out) == 0
+    assert rows(out)["A2"]["industry"] == "Software"
+
+
+def test_write_atomic_failure_keeps_destination(tmp_path: Path) -> None:
+    out = tmp_path / "out.csv"
+    out.write_text("original\n", encoding="utf-8")
+    bad_rows = [{"a": "1"}, {"a": "2", "extra": "x"}]
+    with pytest.raises(ValueError):
+        apply_fixes.write_atomic(out, ["a"], bad_rows)
+    assert out.read_text(encoding="utf-8") == "original\n"
+    assert [p.name for p in tmp_path.iterdir()] == ["out.csv"]

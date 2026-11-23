@@ -60,7 +60,7 @@ def text(fix: dict[str, str], key: str) -> str:
 def apply_one(
     fix: dict[str, str], by_id: dict[str, dict[str, str]], done: set[tuple[str, str]]
 ) -> tuple[bool, str]:
-    account_id, field = text(fix, "account_id"), text(fix, "field")
+    account_id, field = uncell(text(fix, "account_id")), text(fix, "field")
     row = by_id.get(account_id)
     if row is None:
         return False, "account not in the accounts file"
