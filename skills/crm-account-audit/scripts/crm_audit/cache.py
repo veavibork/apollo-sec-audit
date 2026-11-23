@@ -28,9 +28,12 @@ class JsonCache:
         if not path.exists():
             return None
         try:
-            return json.loads(path.read_bytes())
-        except ValueError as exc:
-            raise SourceError(f"corrupt cache file {path}; delete it to refetch") from exc
+            data = json.loads(path.read_bytes())
+        except ValueError:
+            data = None
+        if data is None:
+            raise SourceError(f"corrupt cache file {path}; delete it to refetch")
+        return data
 
     def put(self, key: str, data: Any) -> None:
         path = self.path(key)

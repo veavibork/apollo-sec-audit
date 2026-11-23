@@ -52,3 +52,11 @@ def test_failed_put_leaves_no_file(cache: JsonCache) -> None:
 def test_rejects_windows_reserved_names(cache: JsonCache, key: str) -> None:
     with pytest.raises(ValueError, match="invalid cache key"):
         cache.path(key)
+
+
+def test_cached_null_raises_as_corrupt(cache: JsonCache) -> None:
+    path = cache.path("apollo/a.com.json")
+    path.parent.mkdir(parents=True)
+    path.write_text("null", encoding="utf-8")
+    with pytest.raises(SourceError, match="corrupt cache file"):
+        cache.get("apollo/a.com.json")
