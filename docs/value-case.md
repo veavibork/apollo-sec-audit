@@ -3,7 +3,7 @@
 Every claim below is labeled by its evidence:
 
 - **Source**: quoted from a primary source, with a link. Anyone can check it in one click.
-- **Research**: a published figure, attributed to whoever published it. Where the page blocks automated reading, it's marked "verify by link".
+- **Research**: a published figure, quoted and attributed to whoever published it.
 - **Hypothesis**: reasoning about sales impact. It's plausible, but unmeasured here. The last section shows how Apollo could measure it with its own data.
 
 No figure here is invented. Where no reliable public figure exists, this document says so.
@@ -49,7 +49,7 @@ All item descriptions below are quoted from the SEC bulletin above.
 ## Corrections: why accurate firmographics matter
 
 - **Hypothesis.** Territory assignment, lead routing and account scoring all read annual revenue, HQ state, industry and headcount. A wrong value sends an account to the wrong rep or the wrong tier. That misrouting cost is real, but it varies too much by company to put a number on here.
-- **Research (verify by link).** Gartner reports that poor data quality costs organizations an average of at least $12.9 million a year (2020 research). Source: [Gartner, *Data Quality*](https://www.gartner.com/en/data-analytics/topics/data-quality). Gartner's site blocked automated reading, so this figure is as reported in search results. **Open the link to confirm the wording before citing it.**
+- **Research.** Gartner: "poor data quality costs organizations at least $12.9 million a year on average, according to Gartner research from 2020." ([Gartner, *Data Quality*](https://www.gartner.com/en/data-analytics/topics/data-quality); Gartner's site blocks automated reading, so the author checked this wording by hand on 2026-11-23.) It's an average across all data, not just CRM firmographics.
 - **Research (secondary).** Apollo's guidance cites Only-B2B: "B2B data deteriorates at an average monthly rate of 2.1%, which compounds to roughly 22.5% annually." This is about **contact** data, not firmographics, and it's a secondary citation. We use it only to show that data goes stale on a timescale of months, not years.
 - **Source (this project).** For public companies, the audit replaces estimates with figures the company filed itself, and links the filing. That's what lets a person approve a change quickly.
 - **What the sample does *not* show.** The errors in `data/accounts.csv` were planted. The run proves the tool catches them; it doesn't measure how dirty a real CRM is.
@@ -70,7 +70,7 @@ None of this needs outside research. Apollo has the data.
 | What each 8-K item covers; the four-business-day timing | Source (SEC) |
 | Rebrands and acquisitions make company data go stale | Source (Apollo) |
 | Data decays about 22.5% a year | Research, secondary, about contacts |
-| Poor data quality costs about $12.9M a year | Research; verify by link |
+| Poor data quality costs at least $12.9M a year on average | Research (Gartner, 2020; wording checked by hand) |
 | Executive changes open a buying window | Hypothesis; measure with item 1 above |
 | Acquisitions create buying windows and CRM work | Hypothesis |
 | Restructuring signals budget risk | Hypothesis |
