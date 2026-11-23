@@ -143,7 +143,29 @@ See "What I'd do next".
 
 ## Where AI helped, and where I didn't trust it
 
-_To be written: examples are being chosen._
+I built this with Claude Code. It wrote most of the code and tests; I set the direction, reviewed every PR, and approved every merge. Four moments show where its output needed checking.
+
+**Two I caught myself:**
+
+1. **Industry vocabulary.** The AI proposed leaving private-company industry "unverified", because Apollo's industry labels don't match SEC's. I accepted the reasoning, but asked it to check whether Apollo maps its labels to SIC codes first. Apollo's help pages block automated readers, so the AI couldn't confirm what search results claimed. I saved the pages by hand. They showed two things:
+   - Apollo's industry is "a self-reported, single value pulled from company social media sites".
+   - Its per-company `sic_codes` use SEC's SIC vocabulary.
+
+   The design changed: private-company industry now comes from Apollo's SIC codes at medium confidence ([ADR 0004](docs/adr/0004-audit-rules.md), [probe notes](docs/probe-notes.md)).
+2. **"How is the domain used if we're going off tickers?"** The design said SEC matching is "ticker-only", and I asked what that meant for the CRM domain. The answer made the full chain explicit: domain → Apollo organization → its ticker → SEC. "Ticker-only" covers only the last hop, so a wrong CRM domain reaches the wrong company. The sample's `deltafaucet.com` for Delta Air Lines is exactly that case. A name check already guarded it. The question added an optional CRM ticker column to "What I'd do next".
+
+**Two caught in review, by checking claims against real data instead of trusting the plan:**
+
+1. **The revenue trap.** The written plan said to check SEC revenue concepts in a fixed order. Run against a live SEC response, that order returned HubSpot's 2017 revenue ($375.6M) instead of its current revenue ($3.13B): eight years stale and about 8× too low. The rule became "latest full-year 10-K value across all concepts" ([ADR 0002](docs/adr/0002-sec-annual-revenue-selection.md)).
+2. **A popular statistic, rejected.** Sales content often claims new executives make 60–70% of their vendor decisions in their first 90 days. Researching the value case, we couldn't trace it to any study, so it isn't used. The executive-change signal is labeled a hypothesis, with a way for Apollo to measure it ([docs/value-case.md](docs/value-case.md)).
+
+**How AI output was checked in general:**
+- every behavior has an offline test
+- a hand-written golden harness states the expected result for each case
+- deliberate rule changes (mutation checks) confirm the tests catch them
+- two AI reviews (code and security) run before each PR, and a third (CodeRabbit) after
+- a fresh session tested the skill using only `SKILL.md`
+- live data checked every field name before any code relied on it ([probe notes](docs/probe-notes.md))
 
 ## What was pre-existing
 
