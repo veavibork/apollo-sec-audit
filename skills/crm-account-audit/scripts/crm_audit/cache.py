@@ -8,6 +8,9 @@ from typing import Any
 from crm_audit.errors import SourceError
 
 KEY_PATTERN = re.compile(r"^(apollo|sec)/[A-Za-z0-9][A-Za-z0-9._-]*\.json$")
+WINDOWS_RESERVED = {"con", "prn", "aux", "nul"} | {
+    f"{p}{n}" for p in ("com", "lpt") for n in range(10)
+}
 
 
 class JsonCache:
@@ -15,7 +18,8 @@ class JsonCache:
         self.root = root
 
     def path(self, key: str) -> Path:
-        if not KEY_PATTERN.fullmatch(key) or ".." in key:
+        stem = key.split("/", 1)[-1].split(".", 1)[0].lower()
+        if not KEY_PATTERN.fullmatch(key) or ".." in key or stem in WINDOWS_RESERVED:
             raise ValueError(f"invalid cache key: {key!r}")
         return self.root / key
 

@@ -46,3 +46,9 @@ def test_failed_put_leaves_no_file(cache: JsonCache) -> None:
     with pytest.raises(TypeError):
         cache.put("sec/x.json", {"bad": object()})
     assert list(cache.path("sec/x.json").parent.iterdir()) == []
+
+
+@pytest.mark.parametrize("key", ["apollo/con.com.json", "apollo/NUL.org.json", "sec/com1.json"])
+def test_rejects_windows_reserved_names(cache: JsonCache, key: str) -> None:
+    with pytest.raises(ValueError, match="invalid cache key"):
+        cache.path(key)
