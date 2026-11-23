@@ -28,6 +28,24 @@ def _item(account_id: str, name: str | None, field: FieldResult) -> dict[str, An
     }
 
 
+def event_counts(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Filings per account and 8-K item, with the latest date."""
+    groups: dict[tuple[str, str], dict[str, Any]] = {}
+    for e in events:
+        group = groups.setdefault(
+            (e["account_id"], e["kind"]),
+            {
+                **{k: e[k] for k in ("account_id", "account", "kind", "label")},
+                "count": 0,
+                "latest": None,
+            },
+        )
+        group["count"] += 1
+        if e["date"] and (group["latest"] is None or e["date"] > group["latest"]):
+            group["latest"] = e["date"]
+    return [groups[key] for key in sorted(groups)]
+
+
 def summarize(audit: Any) -> dict[str, Any]:
     if not isinstance(audit, dict) or not isinstance(audit.get("accounts"), list):
         raise ValueError("audit.json has no accounts list")
@@ -49,6 +67,10 @@ def summarize(audit: Any) -> dict[str, Any]:
             for s in signals:
                 if not isinstance(s["kind"], str) or not isinstance(s["date"], str | None):
                     raise TypeError("signal kind must be text and date text or null")
+            for f in fields:
+                for value in (f.crm_value, f.apollo_value, f.sec_value, f.proposed_value):
+                    if isinstance(value, bool) or not isinstance(value, str | int | float | None):
+                        raise TypeError("field values must be text, numbers or null")
         except (KeyError, TypeError):
             raise ValueError(f"audit.json entry {account_id} is malformed") from None
         fixes += [_item(account_id, name, f) for f in fields if is_fix(f)]
@@ -80,6 +102,7 @@ def summarize(audit: Any) -> dict[str, Any]:
     fixes.sort(key=lambda f: (CONFIDENCE_ORDER.get(f["confidence"], 3), f["account_id"]))
     events.sort(key=lambda e: e["date"] or "", reverse=True)
     return {
+        "event_counts": event_counts(events),
         "as_of": audit.get("as_of"),
         "apollo_live_calls": audit.get("apollo_live_calls"),
         "counts": {
