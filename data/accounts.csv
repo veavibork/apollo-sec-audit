@@ -1,0 +1,13 @@
+account_id,name,domain,annual_revenue,hq_state,industry,employees
+A001,HubSpot,hubspot.com,2200000000,MA,Software,8000
+A002,Salesforce,salesforce.com,41525000000,WA,Software,76000
+A003,Apple,apple.com,,CA,Computer Hardware,164000
+A004,Google,google.com,402836000000,CA,Software,183000
+A005,Walmart,walmart.com,713163000000,AR,,2100000
+A006,NVIDIA,nvidia.com,130497000000,California,Semiconductors,36000
+A007,Chipotle,chipotle.com,11925601000,CA,Retail,130000
+A008,Pfizer,pfizer.com,62579000000,NY,Pharmaceuticals,30000
+A009,Delta Air Lines,deltafaucet.com,63364000000,GA,Transportation,100000
+A010,Stripe,stripe.com,1000000000,CA,Software,8000
+A011,Databricks,databricks.com,,CA,,7000
+A012,Chick-fil-A,chick-fil-a.com,6000000000,GA,Restaurants,
