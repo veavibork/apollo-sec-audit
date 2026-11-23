@@ -1,0 +1,17 @@
+{
+  "0": {
+    "cik_str": 320193,
+    "ticker": "AAPL",
+    "title": "Apple Inc."
+  },
+  "8": {
+    "cik_str": 1067983,
+    "ticker": "BRK-B",
+    "title": "BERKSHIRE HATHAWAY INC"
+  },
+  "921": {
+    "cik_str": 1404655,
+    "ticker": "HUBS",
+    "title": "HUBSPOT INC"
+  }
+}
