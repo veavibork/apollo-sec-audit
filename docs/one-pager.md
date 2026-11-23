@@ -10,7 +10,7 @@ An Agent Skill for Claude Code that audits CRM account records against **SEC EDG
 ## Why it matters to a GTM team
 
 - **Routing, territories and scoring run on firmographics.** A stale revenue figure or the wrong HQ state sends an account to the wrong rep or tier. For public companies, the audit replaces estimates with what the company filed, and links the filing so approval takes seconds.
-- **The filings themselves are signals.** SEC: companies must file most 8-Ks "within four business days of the triggering event." The skill flags executive changes (5.02), acquisitions (2.01), restructurings (2.05) and material agreements (1.01) from the last 12 months, plus fiscal year ends for budget timing.
+- **The filings themselves are signals.** SEC: companies must file most 8-Ks "within four business days of the triggering event" ([SEC Investor Bulletin](https://www.sec.gov/files/readan8k.pdf)). The skill flags executive changes (5.02), acquisitions (2.01), restructurings (2.05) and material agreements (1.01) from the last 12 months, plus fiscal year ends for budget timing.
 - **Honest about evidence.** Every claim in the [value case](value-case.md) is labeled as sourced, research or hypothesis. Revenue impact isn't asserted; it's framed as something Apollo can measure with its own data, for example meeting and win rates after a 5.02 filing against a control group.
 
 ## Results on sample data
@@ -19,7 +19,7 @@ An Agent Skill for Claude Code that audits CRM account records against **SEC EDG
 |---|---|
 | Accounts | 12 real companies (9 public, 3 private), fake CRM values |
 | Planted errors caught | **10 of 10**, each at the expected confidence |
-| Real findings, not planted | google.com has no ticker in Apollo (the parent is Alphabet); an Apollo headcount that counts corporate staff only; a wrong founded year in Apollo |
+| Real findings, not planted | google.com has no ticker in Apollo (the parent is Alphabet); an Apollo headcount that appears to count corporate staff only; a wrong founded year in Apollo |
 | Output | 12 proposed fixes, 6 for review, 32 8-K events |
 | Apollo credits | 11 for the live run; reruns are free from the cache |
 
@@ -46,7 +46,7 @@ CRM CSV ──domain──► Apollo enrich ──ticker──► SEC: tickers �
 - **Deterministic code judges; the model explains.** Matching, precedence, tolerances and confidence all live in code and `rules.toml`. Even filing counts are pre-computed after a test caught the model miscounting.
 - **SEC is matched only by ticker,** never by guessing from a name. Name checks guard both hops, and they caught a CRM domain that pointed to Delta Faucet instead of Delta Air Lines.
 - **Approval is built in.**
-  - Low-confidence items can't be applied.
+  - Low-confidence items can't be applied: `apply_fixes.py` refuses them.
   - Each approved row must still match the value the audit saw.
   - Writes go to a copy.
 - **Credits are guarded.** Dry run by default, cache first, and a hard cap on live calls.
