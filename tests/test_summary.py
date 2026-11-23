@@ -208,3 +208,28 @@ def test_output_is_compact(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -
     out = capsys.readouterr().out
     assert "\n " not in out
     assert ", " not in out.replace("CRM differs", "")
+
+
+def test_event_counts_count_repeats_and_keep_groups_apart() -> None:
+    def event(account_id: str, kind: str, day: str | None) -> dict[str, object]:
+        return {
+            "account_id": account_id,
+            "account": account_id,
+            "kind": kind,
+            "label": "Executive change",
+            "date": day,
+            "url": None,
+        }
+
+    counts = summary.event_counts(
+        [
+            event("A1", "8-K 5.02", "2026-03-01"),
+            event("A1", "8-K 5.02", "2026-09-01"),
+            event("A1", "8-K 5.02", None),
+            event("A2", "8-K 5.02", "2026-01-15"),
+        ]
+    )
+    assert [(c["account_id"], c["count"], c["latest"]) for c in counts] == [
+        ("A1", 3, "2026-09-01"),
+        ("A2", 1, "2026-01-15"),
+    ]
