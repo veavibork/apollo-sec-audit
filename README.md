@@ -1,8 +1,167 @@
 # apollo-sec-audit
 
-An Agent Skill that audits CRM account records against Apollo and SEC EDGAR, proposes evidence-backed fixes, and surfaces buying signals. A person approves every change.
+An Agent Skill that audits CRM account records against **Apollo** enrichment and **SEC EDGAR** filings. It proposes evidence-backed fixes and surfaces buying signals from SEC filings. A person approves every change.
 
-Work in progress. Full write-up lands in Step 6 of [docs/KICKOFF.md](docs/KICKOFF.md).
+## What it does
+
+For each account in a CRM export (`account_id, name, domain, annual_revenue, hq_state, industry, employees`), the skill:
+
+1. **Finds the company.**
+   - CRM domain → Apollo organization.
+   - Apollo's ticker → SEC filer, by exact lookup. A name check guards both hops.
+2. **Checks four fields** (revenue, HQ state, industry, employees) against SEC for public companies and Apollo otherwise. Each field gets a status (`ok`, `missing`, `conflict`, `unverified`), a confidence level set by rules, and a one-line rationale with a link to the filing.
+3. **Proposes fixes.**
+   - High-confidence (SEC) and medium-confidence (Apollo) fixes go to `proposed_fixes.csv`.
+   - Low-confidence items go to `needs_review.csv` and are never proposed.
+4. **Adds what the CRM doesn't have:** legal name, fiscal year end, former names, and the last 12 months of 8-Ks for executive changes (5.02), acquisitions (2.01), restructurings (2.05) and material agreements (1.01).
+5. **Applies only approved rows,** to a copy of the CRM file.
+
+Why that matters to a revenue team, with every claim sourced or labeled as a hypothesis: [docs/value-case.md](docs/value-case.md).
+
+## Quick start
+
+Requirements: Python 3.12.
+
+```bash
+python -m venv .venv
+.venv/Scripts/pip install -e ".[dev]"      # Windows; use .venv/bin/pip elsewhere
+cp .env.example .env                       # set SEC_USER_AGENT="Your Name you@example.com"
+```
+
+`APOLLO_API_KEY` is needed only for live Apollo calls (one credit each).
+
+**As a skill.** Open Claude Code in this repo and ask it to "audit my CRM accounts". It follows [`skills/crm-account-audit/SKILL.md`](skills/crm-account-audit/SKILL.md):
+
+1. Dry run.
+2. Ask before spending credits.
+3. Summarize the results.
+4. Apply only the fixes you name.
+
+To install the skill elsewhere, copy the `skills/crm-account-audit` folder into a skills directory Claude Code reads.
+
+**As scripts,** from the repo root:
+
+```bash
+python skills/crm-account-audit/scripts/audit.py                  # dry run: no Apollo calls
+python skills/crm-account-audit/scripts/audit.py --live           # fetch uncached domains (credits)
+python skills/crm-account-audit/scripts/summary.py                # compact JSON of what needs attention
+python skills/crm-account-audit/scripts/apply_fixes.py --approve A001:annual_revenue
+```
+
+Outputs:
+
+- `reports/`: `audit.json`, `proposed_fixes.csv`, `needs_review.csv`, `signals.csv`.
+- `data/accounts.updated.csv`: the approved changes. `data/accounts.csv` is never edited.
+
+Tests run offline (network blocked): `pytest`. Lint and types: `ruff check . && mypy`.
+
+## Sample output
+
+From `data/accounts.csv`: 12 real companies with fake CRM values and 10 planted errors. Apollo's own values are left out here, because the repo is public ([ADR 0001](docs/adr/0001-fixtures-from-real-responses.md)).
+
+```text
+$ python skills/crm-account-audit/scripts/audit.py
+12 accounts; 0 domains not in the Apollo cache.
+Apollo live calls this run: 0
+Wrote reports: 12 proposed fixes, 6 for review, 60 signals, 0 account errors.
+```
+
+| Account | Field | CRM → proposed | Confidence | Rationale (abridged) |
+|---|---|---|---|---|
+| HubSpot | annual_revenue | 2,200,000,000 → 3,131,266,000 | high | SEC 10-K revenue for the year ending 2025-12-31; CRM differs by 30%. [filing](https://www.sec.gov/Archives/edgar/data/1404655/000119312526046646/) |
+| Salesforce | hq_state | WA → CA | high | SEC business address state CA. |
+| NVIDIA | annual_revenue | 130,497,000,000 → 215,938,000,000 | high | SEC 10-K revenue for the year ending 2026-01-25; CRM differs by 40%. [filing](https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/) |
+| Walmart | industry | (blank) → Retail | high | SEC SIC 5331 (Retail-Variety Stores) maps to Retail. |
+| Chipotle | industry | Retail → Restaurants | **low: review** | SEC SIC 5812; industry conflicts always go to a person. |
+| Delta Air Lines | domain | deltafaucet.com | **low: review** | Apollo returned a different company (name check 59.3); the CRM domain is likely wrong. |
+
+All 10 planted errors were caught. Three findings were real rather than planted:
+
+- `google.com` has no ticker in Apollo, because the listed company is the parent, Alphabet.
+- Apollo's headcount for Chick-fil-A looks like corporate staff only.
+- Apollo lists Google's founded year as 2010; it was 1998.
+
+Details: [docs/probe-notes.md](docs/probe-notes.md).
+
+## How it works
+
+```text
+data/accounts.csv
+      │  domain
+      ▼
+Apollo enrich ──(cache/apollo, 1 credit per uncached domain, capped)──► ApolloOrg
+      │  publicly_traded_symbol
+      ▼
+SEC company_tickers.json ──► CIK ──► submissions (name, SIC, state, FYE, 8-Ks)
+                                   └► companyfacts (latest full-year 10-K revenue)
+      │
+      ▼
+matching.py (name checks) → compare.py (rules.toml: precedence, tolerances, confidence)
+      │                         signals.py (8-K items, FYE, former names)
+      ▼
+reports/  ──► summary.py (compact JSON) ──► the model explains, the user approves
+      │
+      ▼
+apply_fixes.py --approve ──► data/accounts.updated.csv (input never edited)
+```
+
+### Design decisions
+
+- **Skill, not just a script or a raw MCP call.**
+  - The scripts do every judgment deterministically: matching, precedence, tolerances, confidence.
+  - The skill adds what a script can't: explaining results in plain language, asking before spending credits, and turning "approve HubSpot's revenue" into one exact command.
+  - A raw MCP or API call would leave the matching and confidence rules to the model on every run.
+
+- **Rules are data.** Precedence, tolerances, name thresholds and 8-K items live in [`rules.toml`](skills/crm-account-audit/scripts/rules.toml); SIC → industry lives in [`sic_industry.csv`](skills/crm-account-audit/scripts/sic_industry.csv). See [ADR 0004](docs/adr/0004-audit-rules.md).
+- **The model reads a trimmed, typed summary,** never raw API responses: 15 KB instead of 40 KB on the sample. Even filing counts are pre-computed ([ADR 0007](docs/adr/0007-trimmed-structured-model-input.md)).
+- **Ticker-only SEC matching.** No CIK is ever guessed from a name. The name check runs against SEC's legal and former names ([ADR 0005](docs/adr/0005-ticker-matching-and-name-check.md)).
+- **SEC revenue is the latest full-year 10-K value across all revenue concepts.** Taking the first concept found gave HubSpot's 2017 revenue ([ADR 0002](docs/adr/0002-sec-annual-revenue-selection.md)).
+- **Credits are guarded.**
+  - The cache is read first.
+  - Dry run is the default.
+  - Live calls are hard-capped, and corrupt cache files raise instead of refetching ([ADR 0003](docs/adr/0003-apollo-credit-guardrails.md)).
+
+- **Writes go to a copy.** Each approved row must still match the CRM value the audit saw. Earlier rounds and reviewer entries are never overwritten ([ADR 0006](docs/adr/0006-write-back-to-a-copy.md)).
+
+**Deliberately left out of v1:**
+
+- private-company SEC lookups (Form D)
+- a live CRM write
+- contacts
+- reading filing text
+
+See "What I'd do next".
+
+## Assumptions
+
+- The CRM export has one row per account, with the seven columns above. The domain is the company's main website.
+- **SEC is authoritative** for revenue, legal name, HQ state and industry (SIC). Apollo is authoritative only for employees. Apollo values are estimates, so they are capped at medium confidence.
+- **HQ means the SEC business address,** not the state of incorporation.
+- Apollo's industry label is self-reported, so industry comes from SIC codes: SEC's for public companies, Apollo's `sic_codes` otherwise. Apollo documents both facts ([probe notes](docs/probe-notes.md)).
+- **US accounts only.** Non-US states are `unverified`, never guessed.
+- A person reviews every proposed change. Medium-confidence fixes in particular need a sanity check.
+
+## Where AI helped, and where I didn't trust it
+
+_To be written: examples are being chosen._
+
+## What was pre-existing
+
+Nothing. Everything here was built for this exercise. It reuses public APIs (Apollo organization enrichment, SEC EDGAR) and standard libraries (`requests`, `rapidfuzz`, `pytest`, `responses`). The test fixtures started from one real Apollo response and real SEC responses. Apollo's values were then replaced with fake ones ([ADR 0001](docs/adr/0001-fixtures-from-real-responses.md)).
+
+## How it was checked
+
+- **329 offline tests.**
+  - `pytest-socket` blocks the network, and `responses` fakes HTTP.
+  - A hand-written golden harness ([`tests/golden/cases.json`](tests/golden/cases.json)) states the expected status and confidence for each case.
+  - Mutation checks confirmed that changing a rule fails the cases it should.
+
+- **Two live runs.** One Apollo probe, and one 11-credit run on the sample, 13 of 85 credits in total. All 10 planted errors were caught at the expected confidence.
+- **A cold test.** A fresh Claude Code session that saw only `SKILL.md` ran the whole flow. Its report was checked line by line against `summary.py` output, and the one error it made (a miscount) moved counting into code.
+- **Reviews on every PR.**
+  - CI runs ruff, ruff format, mypy strict and pytest. CodeQL also runs.
+  - Before each PR: `/code-review` and `/security-review`. After: a CodeRabbit review.
+  - A person approves every merge.
 
 ## What I'd harden for production
 
@@ -18,8 +177,23 @@ Work in progress. Full write-up lands in Step 6 of [docs/KICKOFF.md](docs/KICKOF
 
 ## What I'd do next
 
+- **Private companies through SEC Form D.** Private companies have no ticker, so linking them to an SEC filer means matching by name, and a wrong match is worse than no match. Doing it safely needs a check on name, state and funding date, with weak matches sent to review. That didn't fit the timebox.
 - **Parent and subsidiary linking.** Apollo has no ticker for `google.com`; the listed parent is Alphabet. Linking a brand domain to its listed parent needs a source for corporate hierarchy (Apollo's bulk enrich mentions hierarchy data; not yet verified).
 - **Optional ticker column in the CRM.** Today the chain is CRM domain → Apollo organization → its ticker → SEC, so a wrong domain reaches the wrong company (the sample's `deltafaucet.com` for Delta Air Lines). Many CRMs already store tickers; using one directly would skip the domain hop for public accounts. The CRM-vs-Apollo name check would still guard the domain path.
+- **Write to a live CRM.** v1 writes approved fixes to a copy of the CSV ([ADR 0006](docs/adr/0006-write-back-to-a-copy.md)). A CRM integration needs the same guards (approval, current-value check) plus the CRM's own audit trail.
+- **Contacts.** Executive changes (5.02) name the people involved. Linking them to Apollo contacts would turn a signal into an outreach list, but that adds people data and its privacy rules.
+- **Reading filing text.** Today an 8-K is reported by item code and link. Summarizing the filing itself (who left, what was acquired) is a good job for the model, with the filing as its only input.
 - **International companies.** v1 treats only US states as state evidence. Non-US addresses are `unverified`, never guessed. Apollo doesn't aim to cover international companies fully, so this needs its own scoping.
 - **Confirm how Apollo assigns SIC codes.** Apollo says it "determines SIC and NAICS codes from multiple sources" ([probe notes](docs/probe-notes.md)). Until that's clearer, Apollo-derived industry stays at medium confidence.
-- **Write to a live CRM.** v1 writes approved fixes to a copy of the CSV ([ADR 0006](docs/adr/0006-write-back-to-a-copy.md)). A CRM integration needs the same guards (approval, current-value check) plus the CRM's own audit trail.
+
+## Decision records
+
+[`docs/adr/`](docs/adr/):
+
+1. fixtures from real responses
+2. SEC revenue selection
+3. Apollo credit guardrails
+4. audit rules
+5. ticker matching and the name check
+6. write-back to a copy
+7. trimmed model input
