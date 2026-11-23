@@ -189,3 +189,22 @@ def test_event_counts_are_precomputed(tmp_path: Path) -> None:
             "latest": "2026-11-12",
         },
     ]
+
+
+@pytest.mark.parametrize("key", ["confidence", "status", "field", "rationale", "winner"])
+def test_non_text_field_metadata_is_an_error(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], key: str
+) -> None:
+    field = {**FIELD.__dict__, key: ["high"]}
+    path = tmp_path / "audit.json"
+    body = {"accounts": [{"account": {"account_id": "A1"}, "fields": [field], "signals": []}]}
+    path.write_text(json.dumps(body), encoding="utf-8")
+    assert summary.main(["--audit", str(path)]) == 1
+    assert "error:" in capsys.readouterr().err
+
+
+def test_output_is_compact(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    summary.main(["--audit", str(audit_file(tmp_path))])
+    out = capsys.readouterr().out
+    assert "\n " not in out
+    assert ", " not in out.replace("CRM differs", "")

@@ -71,6 +71,12 @@ def summarize(audit: Any) -> dict[str, Any]:
                 for value in (f.crm_value, f.apollo_value, f.sec_value, f.proposed_value):
                     if isinstance(value, bool) or not isinstance(value, str | int | float | None):
                         raise TypeError("field values must be text, numbers or null")
+                for label in (f.field, f.status, f.rationale):
+                    if not isinstance(label, str):
+                        raise TypeError("field, status and rationale must be text")
+                for optional in (f.winner, f.confidence, f.evidence_url):
+                    if not isinstance(optional, str | None):
+                        raise TypeError("winner, confidence and evidence_url must be text or null")
         except (KeyError, TypeError):
             raise ValueError(f"audit.json entry {account_id} is malformed") from None
         fixes += [_item(account_id, name, f) for f in fields if is_fix(f)]
@@ -133,7 +139,7 @@ def main(argv: list[str] | None = None) -> int:
     except ValueError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
-    print(json.dumps(result, indent=2))
+    print(json.dumps(result, separators=(",", ":")))
     return 0
 
 
