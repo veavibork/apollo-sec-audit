@@ -396,3 +396,38 @@ def test_company_with_empty_recent_filings_is_valid(cache: JsonCache) -> None:
     raw = submissions() | {"filings": {"recent": empty, "files": []}}
     cache.put(f"sec/submissions_{HUBS_CIK}.json", raw)
     assert client(cache).company(HUBS_CIK).filings == ()
+
+
+@pytest.mark.parametrize(
+    ("url", "bad", "call"),
+    [
+        (TICKERS_URL, {"0": {}}, lambda sec: sec.cik_for_ticker("HUBS")),
+        (
+            SUBMISSIONS_URL.format(cik=HUBS_CIK),
+            {"name": "X", "filings": {"recent": {}}},
+            lambda sec: sec.company(HUBS_CIK),
+        ),
+    ],
+)
+@responses.activate
+def test_bodies_that_fail_parsing_are_not_cached(
+    cache: JsonCache, url: str, bad: Any, call: Any
+) -> None:
+    responses.get(url, json=bad)
+    with pytest.raises(SourceError, match="missing required fields"):
+        call(client(cache))
+    assert list(cache.root.rglob("*.json")) == []
+
+
+@responses.activate
+def test_missing_companyfacts_means_no_revenue(cache: JsonCache) -> None:
+    responses.get(FACTS_URL.format(cik=HUBS_CIK), status=404, body="<Error/>")
+    assert client(cache).annual_revenue(HUBS_CIK) is None
+    assert cache.get(f"sec/companyfacts_{HUBS_CIK}.json") is None
+
+
+@responses.activate
+def test_companyfacts_server_error_still_raises(cache: JsonCache) -> None:
+    responses.get(FACTS_URL.format(cik=HUBS_CIK), status=503)
+    with pytest.raises(SourceError, match="HTTP 503"):
+        client(cache).annual_revenue(HUBS_CIK)

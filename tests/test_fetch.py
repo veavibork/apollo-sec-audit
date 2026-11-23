@@ -42,3 +42,12 @@ def test_redirect_is_not_followed() -> None:
     with pytest.raises(SourceError, match="HTTP 302"):
         get_json(requests.Session(), "src", URL, headers={"x-api-key": "secret-key"})
     assert len(responses.calls) == 1
+
+
+@responses.activate
+def test_404_raises_not_found() -> None:
+    from crm_audit.errors import NotFound
+
+    responses.get(URL, status=404, body="<Error><Code>NoSuchKey</Code></Error>")
+    with pytest.raises(NotFound, match="HTTP 404"):
+        get_json(requests.Session(), "src", URL, headers={})

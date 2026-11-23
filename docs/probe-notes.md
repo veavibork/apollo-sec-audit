@@ -60,4 +60,5 @@ Object keyed by row number. Each row: `cik_str` (int), `ticker`, `title`. HUBS â
 - **`fp == "FY"` on a 10-K does not mean a full year.** 10-Ks include quarterly rows (e.g. 2013-01-01 to 2013-03-31). Filter on duration.
 - **`fy` is the filing's fiscal year, not the period's.** Label the period from `end`.
 - Filing index link: `https://www.sec.gov/Archives/edgar/data/{cik}/{accession without dashes}/` â†’ HTTP 200.
+- No data for a CIK (checked 2026-11-23 with CIK 0000000002): companyfacts and submissions both return **HTTP 404** with an XML `NoSuchKey` body.
 - Apollo's real `annual_revenue` matched SEC within 0.001%.

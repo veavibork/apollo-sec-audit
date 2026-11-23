@@ -8,7 +8,7 @@ import requests
 
 from crm_audit.cache import JsonCache
 from crm_audit.coerce import as_date, as_dict, as_float, as_str, as_str_tuple
-from crm_audit.errors import SourceError
+from crm_audit.errors import NotFound, SourceError
 from crm_audit.fetch import get_json
 from crm_audit.models import Filing, FormerName, SecCompany, SecRevenue, TickerMatch
 
@@ -171,13 +171,27 @@ def _annual_10k_row(cik: str, concept: str, raw: Any) -> SecRevenue | None:
     return SecRevenue(value, concept, start, end, filed, accession, archive_url(cik, accession))
 
 
+def ticker_index(raw: dict[str, Any]) -> dict[str, list[TickerMatch]]:
+    index: dict[str, list[TickerMatch]] = {}
+    for row in raw.values():
+        row = as_dict(row)
+        ticker, title, cik = as_str(row.get("ticker")), as_str(row.get("title")), row.get("cik_str")
+        if ticker is None or title is None or not isinstance(cik, int) or isinstance(cik, bool):
+            continue
+        index.setdefault(ticker.upper(), []).append(TickerMatch(normalize_cik(cik), ticker, title))
+    return index
+
+
 def valid_tickers(raw: dict[str, Any]) -> bool:
-    return bool(raw) and all(isinstance(row, dict) for row in raw.values())
+    return bool(ticker_index(raw))
 
 
 def valid_submissions(raw: dict[str, Any]) -> bool:
-    recent = as_dict(raw.get("filings")).get("recent")
-    return as_str(raw.get("name")) is not None and isinstance(recent, dict)
+    try:
+        parse_company("0000000000", raw)
+    except SourceError:
+        return False
+    return True
 
 
 def valid_facts(raw: dict[str, Any]) -> bool:
@@ -214,27 +228,9 @@ class SecClient:
 
     def _ticker_index(self) -> dict[str, list[TickerMatch]]:
         if self._tickers is None:
-            index: dict[str, list[TickerMatch]] = {}
-            for row in as_dict(
+            self._tickers = ticker_index(
                 self._get("sec/company_tickers.json", TICKERS_URL, valid_tickers)
-            ).values():
-                row = as_dict(row)
-                ticker, title, cik = (
-                    as_str(row.get("ticker")),
-                    as_str(row.get("title")),
-                    row.get("cik_str"),
-                )
-                if (
-                    ticker is None
-                    or title is None
-                    or not isinstance(cik, int)
-                    or isinstance(cik, bool)
-                ):
-                    continue
-                index.setdefault(ticker.upper(), []).append(
-                    TickerMatch(normalize_cik(cik), ticker, title)
-                )
-            self._tickers = index
+            )
         return self._tickers
 
     def cik_for_ticker(self, ticker: str) -> TickerMatch | None:
@@ -258,9 +254,11 @@ class SecClient:
     def annual_revenue(
         self, cik: str | int, concepts: Iterable[str] = REVENUE_CONCEPTS
     ) -> SecRevenue | None:
+        """None when SEC has no companyfacts file for the CIK (HTTP 404)."""
         cik = normalize_cik(cik)
-        return select_annual_revenue(
-            cik,
-            self._get(f"sec/companyfacts_{cik}.json", FACTS_URL.format(cik=cik), valid_facts),
-            concepts,
-        )
+        try:
+            url = FACTS_URL.format(cik=cik)
+            facts = self._get(f"sec/companyfacts_{cik}.json", url, valid_facts)
+        except NotFound:
+            return None
+        return select_annual_revenue(cik, facts, concepts)

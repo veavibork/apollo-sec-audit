@@ -2,7 +2,7 @@ from typing import Any
 
 import requests
 
-from crm_audit.errors import SourceError
+from crm_audit.errors import NotFound, SourceError
 
 TIMEOUT_SECONDS = 30
 
@@ -22,6 +22,8 @@ def get_json(
         )
     except requests.RequestException as exc:
         raise SourceError(f"{source}: request failed ({type(exc).__name__})") from None
+    if resp.status_code == 404:
+        raise NotFound(f"{source}: HTTP 404")
     if not 200 <= resp.status_code < 300:
         raise SourceError(f"{source}: HTTP {resp.status_code}")
     try:
