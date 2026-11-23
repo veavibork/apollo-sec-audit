@@ -12,7 +12,7 @@ KICKOFF says a person approves every change. CLAUDE.md says: propose changes, ne
   - the proposed value parses for its field (number, two-letter US state, an industry label from `sic_industry.csv`);
   - only one approved row per account and field.
 - Skipped rows are listed with a reason. The output is written to a temp file and renamed, so a failure never leaves a half-written file.
-- An existing output file is never replaced without `--force`, because it may hold an earlier round. A second round reads the previous output with `--accounts` and writes a new `--out`.
+- An existing output file is never replaced without `--force`, because it may hold an earlier round. Without `--force`, the output is published with a create-if-absent step: a hard link, or an exclusive create where hard links aren't supported. A file that appears mid-run is never clobbered. A second round reads the previous output with `--accounts` and writes a new `--out`.
 - `--approve ACCOUNT:FIELD` records approvals only after the output is written, so a failed write never leaves approvals that weren't applied. It refuses to turn a reviewer's `n` into `y`.
 - Rerunning `audit.py` refuses to replace a `proposed_fixes.csv` that holds approvals, unless `--force` is passed. The check runs before any Apollo call.
 - Every CSV cell that a spreadsheet would run as a formula (leading `=`, `+`, `-`, `@`, tab, CR, or `'`) gets a `'` prefix; `apply_fixes.py` removes it when reading.
@@ -20,4 +20,5 @@ KICKOFF says a person approves every change. CLAUDE.md says: propose changes, ne
 ## Consequences
 - A diff of `accounts.csv` against `accounts.updated.csv` shows exactly what was approved.
 - Writing to a live CRM is future work (README, "What I'd do next"); it would need the same guards plus the CRM's own audit trail.
+- The fixes file is compared with what was read before each write, and the run stops if it changed. If recording approvals fails after the output was written, the output is removed. This narrows the window for losing a concurrent edit but can't close it: an editor saving in the instant between check and write would still be overwritten. A real CRM integration would use the CRM's own record locking.
 - Approvals live in a CSV, so they're lost if someone deletes the file. That's acceptable for a file-based v1.

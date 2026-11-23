@@ -102,6 +102,17 @@ def row_value(value: object) -> str:
     return "(blank)" if value is None else cell(value)
 
 
+def _create_new(tmp: Path, path: Path) -> None:
+    """Publish tmp at path only if path doesn't exist. Hard link where supported."""
+    try:
+        os.link(tmp, path)
+    except FileExistsError:
+        raise
+    except OSError:
+        with path.open("xb") as f:
+            f.write(tmp.read_bytes())
+
+
 def write_atomic(
     path: Path, header: list[str], rows: list[dict[str, str]], replace: bool = True
 ) -> None:
@@ -115,7 +126,7 @@ def write_atomic(
         if replace:
             os.replace(tmp, path)
         else:
-            os.link(tmp, path)
+            _create_new(Path(tmp), path)
             Path(tmp).unlink()
     except BaseException:
         Path(tmp).unlink(missing_ok=True)
@@ -198,14 +209,25 @@ def main(argv: list[str] | None = None) -> int:
     try:
         ensure_unchanged(args.fixes, fixes_bytes)
         write_atomic(args.out, header, rows, replace=args.force)
-        if args.approve:
-            ensure_unchanged(args.fixes, fixes_bytes)
-            write_atomic(args.fixes, fix_header, fixes)
     except FileExistsError:
         print(f"error: {args.out} appeared during the run; nothing written", file=sys.stderr)
         return 1
     except (OSError, ValueError) as exc:
         print(f"error: {exc}", file=sys.stderr)
+        return 1
+    try:
+        if args.approve:
+            ensure_unchanged(args.fixes, fixes_bytes)
+            write_atomic(args.fixes, fix_header, fixes)
+    except (OSError, ValueError) as exc:
+        if not args.force:
+            args.out.unlink(missing_ok=True)
+            print(f"error: {exc}; nothing written", file=sys.stderr)
+        else:
+            print(
+                f"error: {exc}; {args.out} was written but approvals weren't recorded",
+                file=sys.stderr,
+            )
         return 1
 
     applied = [o for o in outcomes if o.applied]
