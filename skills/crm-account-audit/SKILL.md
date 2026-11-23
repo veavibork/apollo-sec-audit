@@ -24,7 +24,7 @@ Run every command from the repository root, with the project's Python environmen
 python skills/crm-account-audit/scripts/audit.py
 ```
 
-Defaults: `--accounts data/accounts.csv`, `--out reports`. Pass `--accounts <path>` if the user names another file.
+Defaults: `--accounts data/accounts.csv`, `--out reports`. Pass `--accounts <path>` if the user names another file, and **keep passing that same `--accounts` to every later `audit.py` and `apply_fixes.py` command** in this workflow. Leaving it off falls back to `data/accounts.csv`, a different file.
 
 The dry run makes **no Apollo calls**. It prints how many domains aren't cached yet.
 
@@ -34,7 +34,7 @@ The dry run makes **no Apollo calls**. It prints how many domains aren't cached 
 ### 2. Live run (only after the user says yes)
 
 ```
-python skills/crm-account-audit/scripts/audit.py --live
+python skills/crm-account-audit/scripts/audit.py --live [--accounts <same path as step 1>]
 ```
 
 The run stops at `APOLLO_MAX_LIVE_CALLS` (default 15). If it stops at the cap, report that and ask before raising the cap with `--max-live-calls N`.
@@ -69,7 +69,7 @@ End by asking which fixes to approve, by account and field.
 Only when the user names specific rows, for example "approve HubSpot revenue and Salesforce state":
 
 ```
-python skills/crm-account-audit/scripts/apply_fixes.py --approve A001:annual_revenue --approve A002:hq_state
+python skills/crm-account-audit/scripts/apply_fixes.py [--accounts <same path as step 1>] --approve A001:annual_revenue --approve A002:hq_state
 ```
 
 This writes `data/accounts.updated.csv`, then records the approvals in `reports/proposed_fixes.csv`. The input file is never changed. Show the user the applied and skipped rows with their reasons.
