@@ -115,8 +115,9 @@ def main(argv: list[str] | None = None) -> int:
         fixes_path = args.out / "proposed_fixes.csv"
         if not args.force and has_approvals(fixes_path):
             raise ValueError(
-                f"{fixes_path} has approvals that a rerun would erase; "
-                "run apply_fixes.py first, or pass --force"
+                f"{fixes_path} has approvals that a rerun would erase. "
+                "Apply them with apply_fixes.py, then rerun with --force "
+                "(add --accounts data/accounts.updated.csv to audit the applied values)"
             )
         apollo = ApolloClient(cache, key if args.live else None, max_live_calls=cap)
     except (OSError, ValueError, SourceError) as exc:
