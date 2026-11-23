@@ -51,7 +51,15 @@ If `audit.py` refuses because `reports/proposed_fixes.csv` holds approvals, an e
 python skills/crm-account-audit/scripts/summary.py
 ```
 
-This prints compact JSON: `fixes`, `review`, `events` (8-K filings), `facts` (legal name, fiscal year end, former names, founded year), `errors` and `counts`. Base your answer on this output. Don't read the raw API cache.
+This prints compact JSON: `fixes`, `review`, `events` (8-K filings), `event_counts` (filings per account and item, with the latest date), `facts` (legal name, fiscal year end, former names, founded year), `errors` and `counts`. Base your answer on this output. Don't read the raw API cache.
+
+Each account's `sec_status` explains its SEC link:
+
+- `matched`: Apollo's ticker found an SEC filer whose name passed the check.
+- `no_ticker`: Apollo has no ticker for this domain. The company is private, or the domain belongs to a brand whose listed parent has another name (e.g. google.com → Alphabet).
+- `ticker_not_in_sec`: Apollo's ticker isn't in SEC's ticker list.
+- `name_check_failed`: the ticker's SEC name didn't match the company, so SEC data wasn't used.
+- `no_apollo_org`: there's no Apollo record (blank domain, or Apollo found nothing).
 
 ### 4. Report to the user
 
@@ -59,7 +67,7 @@ Lead with what matters most, in this order:
 
 1. **Proposed fixes**, high confidence first. For each: account, field, current → proposed value, source, and the rationale. Link the evidence URL when there is one.
 2. **Needs review** (low confidence). Explain why each one isn't proposed: industry conflicts always go to review, a name check failed or was borderline, or Apollo's SIC codes disagree.
-3. **Signals**: recent 8-K events with date, account, what the item means and the filing link. Lead with the rarer items (2.05 restructuring, 2.01 acquisition, 1.01 material agreement), then executive changes (5.02). When there are many, group by account and give counts with the latest date instead of listing every filing. Mention fiscal year ends and former names where they help (budget timing, duplicate records).
+3. **Signals**: recent 8-K events with date, account, what the item means and the filing link. Lead with the rarer items (2.05 restructuring, 2.01 acquisition, 1.01 material agreement), then executive changes (5.02). When there are many, group by account and quote the counts and latest dates from `event_counts`. Never count filings yourself. Mention fiscal year ends and former names where they help (budget timing, duplicate records).
 4. **Errors**: accounts that couldn't be audited, and why.
 
 End by asking which fixes to approve, by account and field.
