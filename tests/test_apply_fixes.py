@@ -45,7 +45,10 @@ def test_applies_only_approved_rows(tmp_path: Path, capsys: pytest.CaptureFixtur
     assert updated["industry"] == "Software"
     assert updated["employees"] == "8000"
     assert accounts.read_text(encoding="utf-8") == ACCOUNTS
-    assert "2 applied, 0 skipped" in capsys.readouterr().out
+    output = capsys.readouterr().out
+    assert "2 applied, 0 skipped" in output
+    assert "annual_revenue: 2200000000 -> 3131266000" in output
+    assert "industry: (blank) -> Software" in output
 
 
 @pytest.mark.parametrize(

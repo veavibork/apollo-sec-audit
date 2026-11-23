@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from crm_audit.accounts import EDITABLE, parse_employees, parse_revenue, parse_text, read_rows
-from crm_audit.reports import FIX_COLUMNS, uncell
+from crm_audit.reports import FIX_COLUMNS, cell, uncell
 from crm_audit.states import state_code
 
 APPROVED = frozenset({"y", "yes"})
@@ -79,7 +79,7 @@ def apply(rows: list[dict[str, str]], fixes: list[dict[str, str]]) -> list[Outco
 
 
 def row_value(value: object) -> str:
-    return "(blank)" if value is None else str(value)
+    return "(blank)" if value is None else cell(value)
 
 
 def main(argv: list[str] | None = None) -> int:
