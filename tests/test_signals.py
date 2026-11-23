@@ -115,3 +115,16 @@ def test_edgar_state_suffix_is_not_a_rename(former: str, kept: bool) -> None:
     company = replace(hubspot(), name=names[former], former_names=(FormerName(former, None, None),))
     found = [s for s in sec_signals(company, RULES, AS_OF) if s.kind == "former_name"]
     assert bool(found) is kept
+
+
+def test_former_names_are_deduplicated() -> None:
+    company = replace(
+        hubspot(),
+        name="Meta Platforms, Inc.",
+        former_names=(
+            FormerName("FACEBOOK INC", None, date(2021, 10, 27)),
+            FormerName("FACEBOOK INC /DE/", None, date(2012, 1, 1)),
+        ),
+    )
+    former = [s.detail for s in sec_signals(company, RULES, AS_OF) if s.kind == "former_name"]
+    assert former == ["FACEBOOK INC (until 2021-10-27)"]
