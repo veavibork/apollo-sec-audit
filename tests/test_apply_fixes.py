@@ -256,3 +256,80 @@ def test_fixes_row_with_extra_values_is_rejected_before_writing(
     assert "line 2: more values than columns" in capsys.readouterr().err
     assert not out.exists()
     assert fixes.read_text(encoding="utf-8") == before
+
+
+def test_write_atomic_without_replace_never_clobbers(tmp_path: Path) -> None:
+    out = tmp_path / "out.csv"
+    out.write_text("appeared meanwhile\n", encoding="utf-8")
+    with pytest.raises(FileExistsError):
+        apply_fixes.write_atomic(out, ["a"], [{"a": "1"}], replace=False)
+    assert out.read_text(encoding="utf-8") == "appeared meanwhile\n"
+    assert [p.name for p in tmp_path.iterdir()] == ["out.csv"]
+
+
+def test_fixes_file_changed_during_run_is_an_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    accounts, fixes, out = setup(tmp_path, "A1,hq_state,CA,MA,sec,u,high,r,\n")
+    real_apply = apply_fixes.apply
+
+    def apply_then_edit(*args: object, **kwargs: object) -> object:
+        result = real_apply(*args, **kwargs)  # type: ignore[arg-type]
+        fixes.write_text(FIX_HEADER + "A1,hq_state,CA,MA,sec,u,high,r,n\n", encoding="utf-8")
+        return result
+
+    monkeypatch.setattr(apply_fixes, "apply", apply_then_edit)
+    assert run_approve(accounts, fixes, out, "A1:hq_state") == 1
+    assert "changed while" in capsys.readouterr().err
+    assert not out.exists()
+    assert fixes.read_text(encoding="utf-8").endswith(",n\n")
+
+
+def test_failed_fixes_write_rolls_back_output(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    accounts, fixes, out = setup(tmp_path, "A1,hq_state,CA,MA,sec,u,high,r,\n")
+    real_write = apply_fixes.write_atomic
+
+    def fail_on_fixes(path: Path, *args: object, **kwargs: object) -> None:
+        if path == fixes:
+            raise PermissionError("locked by another program")
+        real_write(path, *args, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(apply_fixes, "write_atomic", fail_on_fixes)
+    assert run_approve(accounts, fixes, out, "A1:hq_state") == 1
+    assert "nothing written" in capsys.readouterr().err
+    assert not out.exists()
+
+
+def test_exclusive_create_works_without_hard_links(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def no_links(src: object, dst: object) -> None:
+        raise OSError(1, "Incorrect function")
+
+    monkeypatch.setattr("os.link", no_links)
+    out = tmp_path / "out.csv"
+    apply_fixes.write_atomic(out, ["a"], [{"a": "1"}], replace=False)
+    assert out.read_text(encoding="utf-8") == "a\n1\n"
+    with pytest.raises(FileExistsError):
+        apply_fixes.write_atomic(out, ["a"], [{"a": "2"}], replace=False)
+    assert out.read_text(encoding="utf-8") == "a\n1\n"
+    assert [p.name for p in tmp_path.iterdir()] == ["out.csv"]
+
+
+def test_failed_fallback_create_leaves_no_partial_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def no_links(src: object, dst: object) -> None:
+        raise OSError(1, "Incorrect function")
+
+    def broken_read(self: Path) -> bytes:
+        raise OSError(5, "read failed")
+
+    monkeypatch.setattr("os.link", no_links)
+    monkeypatch.setattr(Path, "read_bytes", broken_read)
+    out = tmp_path / "out.csv"
+    with pytest.raises(OSError):
+        apply_fixes.write_atomic(out, ["a"], [{"a": "1"}], replace=False)
+    assert list(tmp_path.iterdir()) == []

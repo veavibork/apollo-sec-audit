@@ -30,7 +30,8 @@ def sec_signals(company: SecCompany, rules: Rules, as_of: date) -> tuple[Signal,
     if fye is not None:
         signals.append(Signal("fiscal_year_end", fye, "sec", None, None))
     seen = {_comparable(company.name, rules)}
-    for former in company.former_names:
+    latest_first = sorted(company.former_names, key=lambda f: f.to_date or date.min, reverse=True)
+    for former in latest_first:
         comparable = _comparable(former.name, rules)
         if comparable in seen:
             continue

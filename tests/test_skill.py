@@ -33,3 +33,23 @@ def test_files_section_matches_disk() -> None:
     assert listed
     for path in listed:
         assert (SKILL_DIR / path).is_file(), path
+
+
+def test_skill_explains_every_sec_status() -> None:
+    for status in (
+        "matched",
+        "no_ticker",
+        "ticker_not_in_sec",
+        "name_check_failed",
+        "no_apollo_org",
+    ):
+        assert f"`{status}`" in SKILL, status
+
+
+def test_skill_says_to_use_precomputed_counts() -> None:
+    assert "event_counts" in SKILL
+
+
+def test_skill_says_matched_includes_borderline() -> None:
+    line = next(x for x in SKILL.splitlines() if x.startswith("- `matched`"))
+    assert "borderline" in line

@@ -155,3 +155,56 @@ def test_malformed_signal_types_are_errors(
     path.write_text(json.dumps(body), encoding="utf-8")
     assert summary.main(["--audit", str(path)]) == 1
     assert "error:" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("bad", [{"amount": 100}, [1], True])
+def test_non_scalar_field_values_are_errors(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], bad: object
+) -> None:
+    field = {**FIELD.__dict__, "proposed_value": bad}
+    path = tmp_path / "audit.json"
+    body = {"accounts": [{"account": {"account_id": "A1"}, "fields": [field], "signals": []}]}
+    path.write_text(json.dumps(body), encoding="utf-8")
+    assert summary.main(["--audit", str(path)]) == 1
+    assert "error:" in capsys.readouterr().err
+
+
+def test_event_counts_are_precomputed(tmp_path: Path) -> None:
+    result = summary.summarize(json.loads(audit_file(tmp_path).read_text(encoding="utf-8")))
+    assert result["event_counts"] == [
+        {
+            "account_id": "A1",
+            "account": "HubSpot",
+            "kind": "8-K 2.05",
+            "label": "Restructuring or layoffs",
+            "count": 1,
+            "latest": "2026-10-06",
+        },
+        {
+            "account_id": "A1",
+            "account": "HubSpot",
+            "kind": "8-K 5.02",
+            "label": "Executive change",
+            "count": 1,
+            "latest": "2026-11-12",
+        },
+    ]
+
+
+@pytest.mark.parametrize("key", ["confidence", "status", "field", "rationale", "winner"])
+def test_non_text_field_metadata_is_an_error(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], key: str
+) -> None:
+    field = {**FIELD.__dict__, key: ["high"]}
+    path = tmp_path / "audit.json"
+    body = {"accounts": [{"account": {"account_id": "A1"}, "fields": [field], "signals": []}]}
+    path.write_text(json.dumps(body), encoding="utf-8")
+    assert summary.main(["--audit", str(path)]) == 1
+    assert "error:" in capsys.readouterr().err
+
+
+def test_output_is_compact(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    summary.main(["--audit", str(audit_file(tmp_path))])
+    out = capsys.readouterr().out
+    assert "\n " not in out
+    assert ", " not in out.replace("CRM differs", "")

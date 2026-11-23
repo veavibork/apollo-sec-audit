@@ -15,3 +15,4 @@ Tests must run offline, so they need fixtures. Fixtures copied from live respons
 - The fake Apollo revenue is about 17% below SEC's FY2025 figure, so the fixture exercises the conflict path. The real values agreed within 0.001%.
 - If Apollo changes its schema, these fixtures won't show it. A scheduled live contract test would (see README, hardening).
 - Re-running `tools/make_fixtures.py` needs the cached raw responses, so it costs one Apollo credit on a fresh machine.
+- **Where the line is (decided 2026-11-23):** API responses, fixtures with real values, report files and any bulk Apollo data are never committed. The docs may quote a handful of individual Apollo values where one explains a finding: Google's founded year, Chick-fil-A's headcount, the company `deltafaucet.com` resolves to, a few SIC codes. That's commentary on specific findings, not redistribution of the dataset.

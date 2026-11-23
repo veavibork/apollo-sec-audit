@@ -6,6 +6,7 @@ CLAUDE.md: "Structured data beats free text. Pass the model trimmed, typed field
 ## Decision
 - Deterministic code does every judgment: matching, precedence, tolerances, confidence and status ([ADR 0004](0004-audit-rules.md)).
 - `summary.py` reduces `audit.json` to what needs a person: proposed fixes, review items, 8-K events, key facts and errors. On the sample data that's 15 KB instead of 40 KB. It rebuilds each field as a typed `FieldResult` and reuses the reports' own fix and review rules, so the summary can't disagree with the CSVs.
+- The summary also carries `event_counts`: filings per account and 8-K item, with the latest date. A cold test showed the model miscounting (8 NVIDIA executive changes instead of 7), so counting is done in code and the model quotes the numbers. The JSON is printed compact, without indentation.
 - `SKILL.md` tells the model to read only that summary, to use only its values, and to keep confidence as reported.
 - Approvals go through `apply_fixes.py --approve ACCOUNT:FIELD`, so the model runs one exact command instead of editing CSV cells.
 
