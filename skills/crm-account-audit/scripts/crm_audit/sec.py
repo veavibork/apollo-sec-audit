@@ -215,16 +215,21 @@ class SecClient:
         self._tickers: dict[str, list[TickerMatch]] | None = None
 
     def _get(self, key: str, url: str, valid: Callable[[dict[str, Any]], bool]) -> dict[str, Any]:
-        data = self._cache.get(key)
-        if data is None:
-            self._throttle.wait()
-            data = get_json(self._session, "sec", url, headers=self._headers)
-            if not isinstance(data, dict):
-                raise SourceError(f"sec: {url} did not return a JSON object")
-            if not valid(data):
-                raise SourceError(f"sec: {url} is missing required fields")
-            self._cache.put(key, data)
-        return as_dict(data)
+        cached = self._cache.get(key)
+        if cached is not None:
+            if not isinstance(cached, dict) or not valid(cached):
+                raise SourceError(
+                    f"corrupt cache file {self._cache.path(key)}; delete it to refetch"
+                )
+            return cached
+        self._throttle.wait()
+        data = get_json(self._session, "sec", url, headers=self._headers)
+        if not isinstance(data, dict):
+            raise SourceError(f"sec: {url} did not return a JSON object")
+        if not valid(data):
+            raise SourceError(f"sec: {url} is missing required fields")
+        self._cache.put(key, data)
+        return data
 
     def _ticker_index(self) -> dict[str, list[TickerMatch]]:
         if self._tickers is None:
