@@ -14,7 +14,7 @@ KICKOFF asks for source precedence "as data, not prose" and for confidence set "
 - **Judgment calls:**
   1. Legal name, founded year, fiscal year end and former names are reported as additions, never as fixes. The CRM has no column for them, and a display name like "HubSpot" is not wrong because the legal name is "HUBSPOT INC".
   2. The CRM name is checked against Apollo's name, to catch a CRM domain that points to another company. A failed check produces a `domain` review item.
-  3. Industry without SEC is `unverified`. Apollo's labels use another vocabulary ("information technology & services"), so comparing them to ours would be a guess. Apollo's label is still shown.
+  3. Industry never compares Apollo's industry label: Apollo documents it as "a self-reported, single value pulled from company social media sites" ([probe notes](../probe-notes.md)). Without SEC, industry comes from Apollo's `sic_codes`, which use SEC's SIC vocabulary, mapped through the same table at medium confidence. If the CRM value matches any of the labels, the field is `ok` at medium. Otherwise, if the codes map to different labels, the candidate (e.g. `Restaurants | Software`) is capped at low. No SIC codes means `unverified`. Apollo's label appears in the rationale for context.
   4. A failed or borderline SEC match produces a `sec_match` review item, so it's visible even when every field agrees. A failed match reports `sec_status` as `name_check_failed`, not `matched`.
 
 ## Consequences

@@ -701,6 +701,260 @@
         ]
       },
       "signals": []
+    },
+    {
+      "id": "apollo_non_us_state_code",
+      "account": {
+        "name": "Atlas Mining",
+        "hq_state": null
+      },
+      "apollo": {
+        "publicly_traded_symbol": null,
+        "name": "Atlas Mining",
+        "state": "WA",
+        "country": "Australia"
+      },
+      "sec": null,
+      "sec_status": "no_ticker",
+      "expect": {
+        "annual_revenue": [
+          "ok",
+          "medium",
+          null
+        ],
+        "hq_state": [
+          "unverified",
+          null,
+          null
+        ],
+        "industry": [
+          "unverified",
+          null,
+          null
+        ],
+        "employees": [
+          "ok",
+          "medium",
+          null
+        ]
+      }
+    },
+    {
+      "id": "apollo_country_missing",
+      "account": {
+        "hq_state": null
+      },
+      "apollo": {
+        "publicly_traded_symbol": null,
+        "country": null
+      },
+      "sec": null,
+      "sec_status": "no_ticker",
+      "expect": {
+        "annual_revenue": [
+          "ok",
+          "medium",
+          null
+        ],
+        "hq_state": [
+          "unverified",
+          null,
+          null
+        ],
+        "industry": [
+          "unverified",
+          null,
+          null
+        ],
+        "employees": [
+          "ok",
+          "medium",
+          null
+        ]
+      }
+    },
+    {
+      "id": "private_apollo_sic_matches",
+      "account": {
+        "industry": "Software"
+      },
+      "apollo": {
+        "publicly_traded_symbol": null,
+        "sic_codes": [
+          "7372"
+        ]
+      },
+      "sec": null,
+      "sec_status": "no_ticker",
+      "expect": {
+        "annual_revenue": [
+          "ok",
+          "medium",
+          null
+        ],
+        "hq_state": [
+          "ok",
+          "medium",
+          null
+        ],
+        "industry": [
+          "ok",
+          "medium",
+          null
+        ],
+        "employees": [
+          "ok",
+          "medium",
+          null
+        ]
+      }
+    },
+    {
+      "id": "private_apollo_sic_fills_blank",
+      "account": {
+        "industry": null
+      },
+      "apollo": {
+        "publicly_traded_symbol": null,
+        "sic_codes": [
+          "7375",
+          "7372"
+        ]
+      },
+      "sec": null,
+      "sec_status": "no_ticker",
+      "expect": {
+        "annual_revenue": [
+          "ok",
+          "medium",
+          null
+        ],
+        "hq_state": [
+          "ok",
+          "medium",
+          null
+        ],
+        "industry": [
+          "missing",
+          "medium",
+          "Software"
+        ],
+        "employees": [
+          "ok",
+          "medium",
+          null
+        ]
+      }
+    },
+    {
+      "id": "private_apollo_sic_labels_disagree",
+      "account": {
+        "industry": null
+      },
+      "apollo": {
+        "publicly_traded_symbol": null,
+        "sic_codes": [
+          "7372",
+          "5812"
+        ]
+      },
+      "sec": null,
+      "sec_status": "no_ticker",
+      "expect": {
+        "annual_revenue": [
+          "ok",
+          "medium",
+          null
+        ],
+        "hq_state": [
+          "ok",
+          "medium",
+          null
+        ],
+        "industry": [
+          "missing",
+          "low",
+          "Restaurants | Software"
+        ],
+        "employees": [
+          "ok",
+          "medium",
+          null
+        ]
+      }
+    },
+    {
+      "id": "private_apollo_sic_matches_one_of_several",
+      "account": {
+        "industry": "Restaurants"
+      },
+      "apollo": {
+        "publicly_traded_symbol": null,
+        "sic_codes": [
+          "7372",
+          "5812"
+        ]
+      },
+      "sec": null,
+      "sec_status": "no_ticker",
+      "expect": {
+        "annual_revenue": [
+          "ok",
+          "medium",
+          null
+        ],
+        "hq_state": [
+          "ok",
+          "medium",
+          null
+        ],
+        "industry": [
+          "ok",
+          "medium",
+          null
+        ],
+        "employees": [
+          "ok",
+          "medium",
+          null
+        ]
+      }
+    },
+    {
+      "id": "private_apollo_sic_conflict_goes_to_review",
+      "account": {
+        "industry": "Retail"
+      },
+      "apollo": {
+        "publicly_traded_symbol": null,
+        "sic_codes": [
+          "7372"
+        ]
+      },
+      "sec": null,
+      "sec_status": "no_ticker",
+      "expect": {
+        "annual_revenue": [
+          "ok",
+          "medium",
+          null
+        ],
+        "hq_state": [
+          "ok",
+          "medium",
+          null
+        ],
+        "industry": [
+          "conflict",
+          "low",
+          "Software"
+        ],
+        "employees": [
+          "ok",
+          "medium",
+          null
+        ]
+      }
     }
   ]
 }

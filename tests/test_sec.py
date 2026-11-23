@@ -431,3 +431,21 @@ def test_companyfacts_server_error_still_raises(cache: JsonCache) -> None:
     responses.get(FACTS_URL.format(cik=HUBS_CIK), status=503)
     with pytest.raises(SourceError, match="HTTP 503"):
         client(cache).annual_revenue(HUBS_CIK)
+
+
+@pytest.mark.parametrize(
+    ("key", "bad", "call"),
+    [
+        ("sec/company_tickers.json", {}, lambda sec: sec.cik_for_ticker("HUBS")),
+        (f"sec/submissions_{HUBS_CIK}.json", {"name": "X"}, lambda sec: sec.company(HUBS_CIK)),
+        (f"sec/companyfacts_{HUBS_CIK}.json", {"cik": 1}, lambda sec: sec.annual_revenue(HUBS_CIK)),
+    ],
+)
+@responses.activate
+def test_invalid_cached_body_raises_as_corrupt(
+    cache: JsonCache, key: str, bad: Any, call: Any
+) -> None:
+    cache.put(key, bad)
+    with pytest.raises(SourceError, match="corrupt cache"):
+        call(client(cache))
+    assert len(responses.calls) == 0

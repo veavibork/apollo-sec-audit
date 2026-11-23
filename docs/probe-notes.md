@@ -26,8 +26,16 @@ HTTP 200, 40 KB, one top-level key: `organization` (58 keys).
 
 - Size: the bulk is `current_technologies` (28 KB), not subsidiaries (`suborganizations` is 3.7 KB).
 - Response headers show request counters and limits, not credits: `x-24-hour-usage`, `x-hourly-usage`, `x-minute-usage`, `x-rate-limit-24-hour: 600`, `x-rate-limit-hourly: 200`, `x-rate-limit-minute: 50`.
-- **Not yet verified:** the response for a domain Apollo doesn't know. The client caches `{"organization": null}` as "no match" and refuses any body without an `organization` key. Check during the Step 4 live run.
+- **Still not verified:** the response for a domain Apollo doesn't know. All 11 domains in the Step 4 run returned an organization. The client caches `{"organization": null}` as "no match" and refuses any body without an `organization` key.
 - Credits: **one enrich call costs one credit.** The Apollo UI went from 1 to 2 of 85 used after this single call.
+
+### Apollo industry and SIC codes (Apollo help center, saved by hand 2026-11-23; the site returns 403 to automated fetches)
+
+- Industry label: "Industry is a self-reported, single value pulled from company social media sites." Apollo's advice: "Use SIC or NAICS codes when you need precise, consistent, and reportable industry groupings."
+- SIC vocabulary: "The descriptions have been sourced from the Division of Corporation Finance: Standard Industrial Classification (SIC) Code List." All 131 codes on Apollo's filter list are on SEC's list and map through `sic_industry.csv`.
+- Assignment: "Apollo determines SIC and NAICS codes from multiple sources, and this information may be updated regularly." So a company's codes are Apollo's own judgment, not its SEC filing: medium confidence.
+- HubSpot's enrich response had `sic_codes: ["7375", "7372"]`. `7375` isn't on the filter list, so a response can hold codes the list doesn't show.
+- No published mapping from Apollo's industry labels to SIC or NAICS was found.
 
 ## SEC `company_tickers.json`
 
@@ -40,7 +48,7 @@ Object keyed by row number. Each row: `cik_str` (int), `ticker`, `title`. HUBS â
 | Legal name | `name` | `HUBSPOT INC` |
 | Former names | `formerNames` | `[]` (list); entries are `{name, from, to}` with ISO timestamps* |
 | SIC | `sic`, `sicDescription` | `"7372"` (string), `Services-Prepackaged Software` |
-| Fiscal year end | `fiscalYearEnd` | `"1231"` (MMDD) |
+| Fiscal year end | `fiscalYearEnd` | `"1231"` (MMDD); approximate for 52/53-week years (Apple: `0925`, latest year ended 2026-09-26) |
 | HQ state | `addresses.business.stateOrCountry` | `MA` |
 | Exchange | `exchanges` | `["NYSE"]` |
 
@@ -62,3 +70,10 @@ Object keyed by row number. Each row: `cik_str` (int), `ticker`, `title`. HUBS â
 - Filing index link: `https://www.sec.gov/Archives/edgar/data/{cik}/{accession without dashes}/` â†’ HTTP 200.
 - No data for a CIK (checked 2026-11-23 with CIK 0000000002): companyfacts and submissions both return **HTTP 404** with an XML `NoSuchKey` body.
 - Apollo's real `annual_revenue` matched SEC within 0.001%.
+
+## Step 4 live run (2026-11-23, 11 Apollo credits)
+
+- `google.com`: Apollo's organization has **no `publicly_traded_symbol`**. The listed company is the parent, Alphabet Inc. (GOOGL), so the account gets no SEC data. That's a parent/subsidiary gap, not a name-check failure.
+- `deltafaucet.com` (planted as Delta Air Lines' domain): Apollo returned "Delta Faucet Company". The CRM-vs-Apollo name check scored 59.3 and failed, so every value went to review at low confidence.
+- Chick-fil-A: Apollo estimates 3,000 employees, which looks like corporate staff rather than the franchise system. Medium-confidence proposals still need a person's judgment.
+- Databricks: `sic_codes` `["7374", "7372"]` â†’ Software, through the same SIC table SEC values use.

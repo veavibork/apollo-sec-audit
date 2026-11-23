@@ -3,7 +3,7 @@
 [precedence]
 annual_revenue = ["sec", "apollo"]
 hq_state = ["sec", "apollo"]
-industry = ["sec"]
+industry = ["sec", "apollo"]
 employees = ["apollo"]
 
 [review_on_conflict]

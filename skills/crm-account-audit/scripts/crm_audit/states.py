@@ -53,6 +53,13 @@ US_STATES = {
     "WY": "Wyoming",
 }
 _BY_NAME = {name.casefold(): code for code, name in US_STATES.items()}
+US_COUNTRY_NAMES = frozenset(
+    {"united states", "united states of america", "usa", "us", "u.s.", "u.s.a."}
+)
+
+
+def is_us(country: str | None) -> bool:
+    return country is not None and country.strip().casefold() in US_COUNTRY_NAMES
 
 
 def state_code(value: str | None) -> str | None:

@@ -15,3 +15,10 @@ Work in progress. Full write-up lands in Step 6 of [docs/KICKOFF.md](docs/KICKOF
 - **Shared rate limit.** The SEC throttle is per process. Two runs at once could exceed 10 requests per second. Use a shared limiter if runs go parallel.
 - **Stronger name check.** `token_set_ratio` passes subsets ("Apple" vs "Apple Hospitality REIT"; [ADR 0005](docs/adr/0005-ticker-matching-and-name-check.md)). Add a second signal, such as `token_sort_ratio` or the HQ state, before trusting the match.
 - **Paid CodeRabbit tier.** The free tier allows about one review per hour. So minor findings that don't change a PR's behavior are deferred to the next step's PR, where they're fixed test-first, instead of waiting an hour for a re-review. The PR thread names the PR that fixes each one. With a paid tier, fix and re-review in the same PR.
+
+## What I'd do next
+
+- **Parent and subsidiary linking.** Apollo has no ticker for `google.com`; the listed parent is Alphabet. Linking a brand domain to its listed parent needs a source for corporate hierarchy (Apollo's bulk enrich mentions hierarchy data; not yet verified).
+- **International companies.** v1 treats only US states as state evidence. Non-US addresses are `unverified`, never guessed. Apollo doesn't aim to cover international companies fully, so this needs its own scoping.
+- **Confirm how Apollo assigns SIC codes.** Apollo says it "determines SIC and NAICS codes from multiple sources" ([probe notes](docs/probe-notes.md)). Until that's clearer, Apollo-derived industry stays at medium confidence.
+- **Write to a live CRM.** v1 writes approved fixes to a copy of the CSV ([ADR 0006](docs/adr/0006-write-back-to-a-copy.md)). A CRM integration needs the same guards (approval, current-value check) plus the CRM's own audit trail.
