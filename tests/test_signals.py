@@ -128,3 +128,16 @@ def test_former_names_are_deduplicated() -> None:
     )
     former = [s.detail for s in sec_signals(company, RULES, AS_OF) if s.kind == "former_name"]
     assert former == ["FACEBOOK INC (until 2021-10-27)"]
+
+
+def test_duplicate_former_name_keeps_the_latest_entry() -> None:
+    company = replace(
+        hubspot(),
+        name="Meta Platforms, Inc.",
+        former_names=(
+            FormerName("FACEBOOK INC /DE/", None, date(2012, 1, 1)),
+            FormerName("FACEBOOK INC", None, date(2021, 10, 27)),
+        ),
+    )
+    former = [s.detail for s in sec_signals(company, RULES, AS_OF) if s.kind == "former_name"]
+    assert former == ["FACEBOOK INC (until 2021-10-27)"]
