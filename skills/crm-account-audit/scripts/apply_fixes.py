@@ -109,13 +109,13 @@ def _create_new(tmp: Path, path: Path) -> None:
     except FileExistsError:
         raise
     except OSError:
-        with path.open("xb") as f:
-            try:
+        f = path.open("xb")
+        try:
+            with f:
                 f.write(tmp.read_bytes())
-            except BaseException:
-                f.close()
-                path.unlink(missing_ok=True)
-                raise
+        except BaseException:
+            path.unlink(missing_ok=True)
+            raise
 
 
 def write_atomic(
