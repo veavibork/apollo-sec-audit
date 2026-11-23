@@ -34,3 +34,11 @@ def test_connection_error_raises_source_error() -> None:
     responses.get(URL, body=requests.ConnectionError("boom"))
     with pytest.raises(SourceError, match="request failed"):
         get_json(requests.Session(), "src", URL, headers={})
+
+
+@responses.activate
+def test_redirect_is_not_followed() -> None:
+    responses.get(URL, status=302, headers={"Location": "https://evil.test/steal"})
+    with pytest.raises(SourceError, match="HTTP 302"):
+        get_json(requests.Session(), "src", URL, headers={"x-api-key": "secret-key"})
+    assert len(responses.calls) == 1
