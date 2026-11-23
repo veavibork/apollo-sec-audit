@@ -59,7 +59,7 @@ def test_applies_only_approved_rows(tmp_path: Path, capsys: pytest.CaptureFixtur
         ("A9,annual_revenue,1,2,sec,u,high,r,y\n", "account not in the accounts file"),
         ("A1,name,HubSpot,HUBSPOT INC,sec,u,high,r,y\n", "can't be edited"),
         ("A1,hq_state,CA,Massachusetts,sec,u,high,r,y\n", "not a two-letter US state code"),
-        ("A1,industry,,Restaurants | Software,apollo,,low,r,y\n", "lists several labels"),
+        ("A1,industry,,Restaurants | Software,apollo,,medium,r,y\n", "lists several labels"),
         ("A1,industry,,=HYPERLINK(1),sec,u,high,r,y\n", "not a known industry label"),
         ("A1,industry,,Widgets,sec,u,high,r,y\n", "not a known industry label"),
         ("A1,employees,8000,lots,apollo,,medium,r,y\n", "must be a whole number"),
