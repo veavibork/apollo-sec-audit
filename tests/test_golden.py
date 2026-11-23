@@ -85,6 +85,7 @@ def to_org(data: dict[str, Any] | None) -> ApolloOrg | None:
         return None
     fields: dict[str, Any] = dict.fromkeys(ApolloOrg.__dataclass_fields__)
     fields |= {"sic_codes": (), "naics_codes": ()}
+    data = data | {"sic_codes": tuple(data.get("sic_codes", ()))}
     return ApolloOrg(**(fields | data))
 
 
@@ -179,3 +180,9 @@ def test_industry_shows_apollo_label_for_display_only() -> None:
 )
 def test_money(value: float, text: str) -> None:
     assert money(value) == text
+
+
+def test_apollo_sic_rationale_names_codes_and_self_reported_label() -> None:
+    industry = field(run(case("private_apollo_sic_fills_blank")), "industry")
+    assert industry.rationale.startswith("Apollo SIC 7375, 7372 maps to Software")
+    assert "Apollo's self-reported label 'information technology & services'" in industry.rationale

@@ -31,6 +31,7 @@ class Evidence:
     value: Value
     label: str
     url: str | None
+    cap: str = HIGH
 
 
 @dataclass(frozen=True)
@@ -170,7 +171,8 @@ def resolve(
     agree: Agree,
     display: dict[str, Value | None] | None = None,
 ) -> FieldResult:
-    shown = {s: (e.value if e else None) for s, e in evidence.items()} | (display or {})
+    fallback = display or {}
+    shown = {s: (e.value if e else fallback.get(s)) for s, e in evidence.items()}
     usable = {s: e for s, e in evidence.items() if e is not None and trust[s].usable}
     winner = next((s for s in rules.precedence[field] if s in usable), None)
 
@@ -190,7 +192,9 @@ def resolve(
         return unverified
 
     chosen = usable[winner]
-    confidence = _min_confidence(BASE_CONFIDENCE[winner], trust[winner].cap)
+    confidence = _min_confidence(
+        _min_confidence(BASE_CONFIDENCE[winner], trust[winner].cap), chosen.cap
+    )
     parts = [chosen.label]
     proposed: Value | None
     if crm is None:
@@ -217,6 +221,24 @@ def resolve(
         rationale="; ".join(parts) + ".",
         evidence_url=chosen.url,
     )
+
+
+def apollo_industry(
+    org: ApolloOrg | None, crm: str | None, industries: IndustryMap
+) -> Evidence | None:
+    """Industry from Apollo's SIC codes. Labels that disagree cap the evidence at low."""
+    if org is None:
+        return None
+    labels = sorted({label for c in org.sic_codes if (label := industries.label(c))})
+    if not labels:
+        return None
+    matching = [label for label in labels if crm is not None and label_agree(crm, label)[0]]
+    value = matching[0] if matching else " | ".join(labels)
+    cap = HIGH if matching or len(labels) == 1 else LOW
+    text = f"Apollo SIC {', '.join(org.sic_codes)} maps to {' | '.join(labels)}"
+    if org.industry:
+        text += f"; Apollo's self-reported label '{org.industry}'"
+    return Evidence(value, text, None, cap)
 
 
 def compare_account(
@@ -290,7 +312,7 @@ def compare_account(
                 )
                 if company and industry
                 else None,
-                "apollo": None,
+                "apollo": apollo_industry(org, account.industry, industries),
             },
             trust,
             rules,
