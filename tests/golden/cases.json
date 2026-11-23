@@ -701,6 +701,77 @@
         ]
       },
       "signals": []
+    },
+    {
+      "id": "apollo_non_us_state_code",
+      "account": {
+        "name": "Atlas Mining",
+        "hq_state": null
+      },
+      "apollo": {
+        "publicly_traded_symbol": null,
+        "name": "Atlas Mining",
+        "state": "WA",
+        "country": "Australia"
+      },
+      "sec": null,
+      "sec_status": "no_ticker",
+      "expect": {
+        "annual_revenue": [
+          "ok",
+          "medium",
+          null
+        ],
+        "hq_state": [
+          "unverified",
+          null,
+          null
+        ],
+        "industry": [
+          "unverified",
+          null,
+          null
+        ],
+        "employees": [
+          "ok",
+          "medium",
+          null
+        ]
+      }
+    },
+    {
+      "id": "apollo_country_missing",
+      "account": {
+        "hq_state": null
+      },
+      "apollo": {
+        "publicly_traded_symbol": null,
+        "country": null
+      },
+      "sec": null,
+      "sec_status": "no_ticker",
+      "expect": {
+        "annual_revenue": [
+          "ok",
+          "medium",
+          null
+        ],
+        "hq_state": [
+          "unverified",
+          null,
+          null
+        ],
+        "industry": [
+          "unverified",
+          null,
+          null
+        ],
+        "employees": [
+          "ok",
+          "medium",
+          null
+        ]
+      }
     }
   ]
 }

@@ -17,7 +17,7 @@ from crm_audit.models import (
 )
 from crm_audit.rules import IndustryMap, Rules
 from crm_audit.signals import sec_signals
-from crm_audit.states import state_code
+from crm_audit.states import is_us, state_code
 
 HIGH, MEDIUM, LOW = "high", "medium", "low"
 _RANK = {LOW: 0, MEDIUM: 1, HIGH: 2}
@@ -249,7 +249,7 @@ def compare_account(
         else None
     )
     sec_state_code = state_code(company.business_state) if company else None
-    apollo_state_code = state_code(org.state) if org else None
+    apollo_state_code = state_code(org.state) if org and is_us(org.country) else None
     industry = industries.label(company.sic) if company else None
     employees = org.estimated_num_employees if org else None
 
