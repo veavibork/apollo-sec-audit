@@ -27,7 +27,7 @@ def normalize_domain(raw: str) -> str:
 
 
 def cache_key(domain: str) -> str:
-    """'con.com' -> 'apollo/con_.com.json'. Domain labels can't hold '_', so names stay unique."""
+    """'con.com' -> 'apollo/con_.com.json'."""
     first, _, rest = domain.partition(".")
     if first in WINDOWS_RESERVED:
         first += "_"
