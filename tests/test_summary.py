@@ -115,3 +115,43 @@ def test_malformed_audit_file_is_an_error(
 def test_missing_audit_file_is_an_error(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     assert summary.main(["--audit", str(tmp_path / "nope.json")]) == 1
     assert "run audit.py first" in capsys.readouterr().err
+
+
+def test_output_is_ascii_so_any_console_can_print_it(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    path = tmp_path / "audit.json"
+    body = {
+        "accounts": [
+            {
+                "account": {"account_id": "A1", "name": "\u00d8rsted \u4e2d"},
+                "fields": [],
+                "signals": [],
+            }
+        ]
+    }
+    path.write_text(json.dumps(body), encoding="utf-8")
+    assert summary.main(["--audit", str(path)]) == 0
+    out = capsys.readouterr().out
+    assert out.isascii()
+    assert json.loads(out)["facts"][0]["account"] == "\u00d8rsted \u4e2d"
+
+
+@pytest.mark.parametrize(
+    "signals",
+    [
+        [{"kind": 5, "detail": "x", "date": None, "url": None}],
+        [
+            {"kind": "8-K 5.02", "detail": "x", "date": "2026-01-01", "url": None},
+            {"kind": "8-K 5.02", "detail": "x", "date": 20260101, "url": None},
+        ],
+    ],
+)
+def test_malformed_signal_types_are_errors(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], signals: list[object]
+) -> None:
+    path = tmp_path / "audit.json"
+    body = {"accounts": [{"account": {"account_id": "A1"}, "fields": [], "signals": signals}]}
+    path.write_text(json.dumps(body), encoding="utf-8")
+    assert summary.main(["--audit", str(path)]) == 1
+    assert "error:" in capsys.readouterr().err

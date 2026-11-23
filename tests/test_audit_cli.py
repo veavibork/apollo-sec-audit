@@ -167,3 +167,16 @@ def test_approval_guard_explains_recovery(
     assert "apply_fixes.py" in err
     assert "--force" in err
     assert "--accounts data/accounts.updated.csv" in err
+
+
+def test_safe_output_replaces_unprintable_characters() -> None:
+    import io
+
+    from crm_audit.console import safe_output
+
+    raw = io.BytesIO()
+    stream = io.TextIOWrapper(raw, encoding="cp1252")
+    safe_output(stream)
+    stream.write("\u00d8rsted \u4e2d")
+    stream.flush()
+    assert raw.getvalue() == "\u00d8rsted \\u4e2d".encode("cp1252")

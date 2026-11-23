@@ -6,6 +6,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from crm_audit.console import safe_output
 from crm_audit.models import FieldResult
 from crm_audit.reports import is_fix, needs_review
 
@@ -45,6 +46,9 @@ def summarize(audit: Any) -> dict[str, Any]:
             signals = [
                 {k: s[k] for k in ("kind", "detail", "date", "url")} for s in entry["signals"]
             ]
+            for s in signals:
+                if not isinstance(s["kind"], str) or not isinstance(s["date"], str | None):
+                    raise TypeError("signal kind must be text and date text or null")
         except (KeyError, TypeError):
             raise ValueError(f"audit.json entry {account_id} is malformed") from None
         fixes += [_item(account_id, name, f) for f in fields if is_fix(f)]
@@ -97,6 +101,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--audit", type=Path, default=Path("reports/audit.json"))
     args = parser.parse_args(argv)
+    safe_output()
     if not args.audit.exists():
         print(f"error: {args.audit} not found; run audit.py first", file=sys.stderr)
         return 1
@@ -105,7 +110,7 @@ def main(argv: list[str] | None = None) -> int:
     except ValueError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
-    print(json.dumps(result, indent=2, ensure_ascii=False))
+    print(json.dumps(result, indent=2))
     return 0
 
 
