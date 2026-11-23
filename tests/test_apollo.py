@@ -206,3 +206,17 @@ def test_trim_rejects_non_finite_numbers(value: float) -> None:
     assert org is not None
     assert org.annual_revenue is None
     assert org.total_funding is None
+
+
+@responses.activate
+def test_windows_reserved_domain_gets_safe_cache_name(cache: JsonCache) -> None:
+    responses.get(ENRICH_URL, json={"organization": None})
+    assert client(cache).enrich("con.com") is None
+    assert cache.get("apollo/con_.com.json") == {"organization": None}
+
+
+def test_trim_handles_integers_too_big_for_float() -> None:
+    org = trim({"organization": {"annual_revenue": 10**400, "total_funding": 5}})
+    assert org is not None
+    assert org.annual_revenue is None
+    assert org.total_funding == 5.0

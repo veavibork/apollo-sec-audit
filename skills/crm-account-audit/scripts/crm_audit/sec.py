@@ -8,7 +8,7 @@ import requests
 
 from crm_audit.cache import JsonCache
 from crm_audit.coerce import as_date, as_dict, as_float, as_str, as_str_tuple
-from crm_audit.errors import SourceError
+from crm_audit.errors import NotFound, SourceError
 from crm_audit.fetch import get_json
 from crm_audit.models import Filing, FormerName, SecCompany, SecRevenue, TickerMatch
 
@@ -171,6 +171,33 @@ def _annual_10k_row(cik: str, concept: str, raw: Any) -> SecRevenue | None:
     return SecRevenue(value, concept, start, end, filed, accession, archive_url(cik, accession))
 
 
+def ticker_index(raw: dict[str, Any]) -> dict[str, list[TickerMatch]]:
+    index: dict[str, list[TickerMatch]] = {}
+    for row in raw.values():
+        row = as_dict(row)
+        ticker, title, cik = as_str(row.get("ticker")), as_str(row.get("title")), row.get("cik_str")
+        if ticker is None or title is None or not isinstance(cik, int) or isinstance(cik, bool):
+            continue
+        index.setdefault(ticker.upper(), []).append(TickerMatch(normalize_cik(cik), ticker, title))
+    return index
+
+
+def valid_tickers(raw: dict[str, Any]) -> bool:
+    return bool(ticker_index(raw))
+
+
+def valid_submissions(raw: dict[str, Any]) -> bool:
+    try:
+        parse_company("0000000000", raw)
+    except SourceError:
+        return False
+    return True
+
+
+def valid_facts(raw: dict[str, Any]) -> bool:
+    return isinstance(raw.get("facts"), dict)
+
+
 class SecClient:
     def __init__(
         self,
@@ -187,37 +214,23 @@ class SecClient:
         self._throttle = throttle or Throttle()
         self._tickers: dict[str, list[TickerMatch]] | None = None
 
-    def _get(self, key: str, url: str) -> dict[str, Any]:
+    def _get(self, key: str, url: str, valid: Callable[[dict[str, Any]], bool]) -> dict[str, Any]:
         data = self._cache.get(key)
         if data is None:
             self._throttle.wait()
             data = get_json(self._session, "sec", url, headers=self._headers)
             if not isinstance(data, dict):
                 raise SourceError(f"sec: {url} did not return a JSON object")
+            if not valid(data):
+                raise SourceError(f"sec: {url} is missing required fields")
             self._cache.put(key, data)
         return as_dict(data)
 
     def _ticker_index(self) -> dict[str, list[TickerMatch]]:
         if self._tickers is None:
-            index: dict[str, list[TickerMatch]] = {}
-            for row in as_dict(self._get("sec/company_tickers.json", TICKERS_URL)).values():
-                row = as_dict(row)
-                ticker, title, cik = (
-                    as_str(row.get("ticker")),
-                    as_str(row.get("title")),
-                    row.get("cik_str"),
-                )
-                if (
-                    ticker is None
-                    or title is None
-                    or not isinstance(cik, int)
-                    or isinstance(cik, bool)
-                ):
-                    continue
-                index.setdefault(ticker.upper(), []).append(
-                    TickerMatch(normalize_cik(cik), ticker, title)
-                )
-            self._tickers = index
+            self._tickers = ticker_index(
+                self._get("sec/company_tickers.json", TICKERS_URL, valid_tickers)
+            )
         return self._tickers
 
     def cik_for_ticker(self, ticker: str) -> TickerMatch | None:
@@ -232,11 +245,20 @@ class SecClient:
     def company(self, cik: str | int) -> SecCompany:
         cik = normalize_cik(cik)
         return parse_company(
-            cik, self._get(f"sec/submissions_{cik}.json", SUBMISSIONS_URL.format(cik=cik))
+            cik,
+            self._get(
+                f"sec/submissions_{cik}.json", SUBMISSIONS_URL.format(cik=cik), valid_submissions
+            ),
         )
 
-    def annual_revenue(self, cik: str | int) -> SecRevenue | None:
+    def annual_revenue(
+        self, cik: str | int, concepts: Iterable[str] = REVENUE_CONCEPTS
+    ) -> SecRevenue | None:
+        """None when SEC has no companyfacts file for the CIK (HTTP 404)."""
         cik = normalize_cik(cik)
-        return select_annual_revenue(
-            cik, self._get(f"sec/companyfacts_{cik}.json", FACTS_URL.format(cik=cik))
-        )
+        try:
+            url = FACTS_URL.format(cik=cik)
+            facts = self._get(f"sec/companyfacts_{cik}.json", url, valid_facts)
+        except NotFound:
+            return None
+        return select_annual_revenue(cik, facts, concepts)

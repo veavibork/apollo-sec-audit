@@ -5,11 +5,12 @@ Each Apollo enrich call costs one credit ([probe notes](../probe-notes.md)), and
 
 ## Decision
 - **Cache first.** `ApolloClient.enrich` reads `cache/apollo/{domain}.json` before calling. A cached domain never costs a credit and doesn't need `APOLLO_API_KEY`.
-- **Cache the whole parsed response, never raw bytes.** A body is saved only after it parses and has the expected shape (for Apollo, an `organization` key, which may be null), so a bad response can't stick in the cache.
-- **Redirects are refused.** requests keeps custom headers such as `x-api-key` on a redirect to another host, so a 3xx is an error. Writes are atomic. Trimming happens on read, so changing the trimmed fields costs no credits.
+- **Cache the whole parsed response, never raw bytes.** A body is saved only after it parses and has the expected shape (Apollo: an `organization` key, which may be null; SEC: the same parsers that read it must succeed, such as at least one usable ticker row or a submissions body whose filings parse; a companyfacts `facts` object), so a bad response can't stick in the cache. Writes are atomic. Trimming happens on read, so changing the trimmed fields costs no credits.
+- **Redirects are refused.** requests keeps custom headers such as `x-api-key` on a redirect to another host, so a 3xx is an error.
 - **Corrupt cache files raise.** They are not treated as a miss, because a silent refetch spends a credit.
 - **Hard cap per run.** `ApolloClient` takes `max_live_calls`; the audit CLI sets it from `APOLLO_MAX_LIVE_CALLS` (default 15). A call is counted before it is sent, since a failed call may still cost a credit. Hitting the cap raises `LiveCallLimitReached`; the run stops instead of skipping accounts.
 - **Domains are validated** before they become cache file names, so CRM input can't write outside `cache/`.
+- **A missing SEC companyfacts file (HTTP 404) means no SEC revenue**, not a failed account. Other HTTP errors still raise.
 - **SEC throttle** at 8 requests per second, live calls only.
 - **Tests never call either API.** `pytest-socket` blocks the network and `responses` fakes HTTP.
 
