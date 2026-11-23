@@ -81,3 +81,50 @@ def test_former_names_become_signals() -> None:
     assert [(s.detail, s.date) for s in former] == [
         ("Facebook Inc (until 2021-10-27)", date(2021, 10, 27))
     ]
+
+
+def test_former_name_equal_to_current_name_is_dropped() -> None:
+    company = replace(
+        hubspot(),
+        former_names=(
+            FormerName("HubSpot, Inc.", None, date(2026, 11, 16)),
+            FormerName("HUBSPOT INC", None, date(2026, 1, 1)),
+            FormerName("HubSpot Marketing", None, date(2010, 1, 1)),
+        ),
+    )
+    former = [s.detail for s in sec_signals(company, RULES, AS_OF) if s.kind == "former_name"]
+    assert former == ["HubSpot Marketing (until 2010-01-01)"]
+
+
+@pytest.mark.parametrize(
+    ("former", "kept"),
+    [
+        ("NVIDIA CORP/CA", False),
+        ("DELTA AIR LINES INC /DE/", False),
+        ("ACME INC/ FA", False),
+        ("APPLE COMPUTER INC/ FA", True),
+    ],
+)
+def test_edgar_state_suffix_is_not_a_rename(former: str, kept: bool) -> None:
+    names = {
+        "NVIDIA CORP/CA": "NVIDIA CORP",
+        "DELTA AIR LINES INC /DE/": "DELTA AIR LINES, INC.",
+        "ACME INC/ FA": "Acme Inc.",
+        "APPLE COMPUTER INC/ FA": "Apple Inc.",
+    }
+    company = replace(hubspot(), name=names[former], former_names=(FormerName(former, None, None),))
+    found = [s for s in sec_signals(company, RULES, AS_OF) if s.kind == "former_name"]
+    assert bool(found) is kept
+
+
+def test_former_names_are_deduplicated() -> None:
+    company = replace(
+        hubspot(),
+        name="Meta Platforms, Inc.",
+        former_names=(
+            FormerName("FACEBOOK INC", None, date(2021, 10, 27)),
+            FormerName("FACEBOOK INC /DE/", None, date(2012, 1, 1)),
+        ),
+    )
+    former = [s.detail for s in sec_signals(company, RULES, AS_OF) if s.kind == "former_name"]
+    assert former == ["FACEBOOK INC (until 2021-10-27)"]

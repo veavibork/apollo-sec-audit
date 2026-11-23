@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 
 import apply_fixes
-from crm_audit.reports import FIX_COLUMNS
+from crm_audit.reports import FIX_COLUMNS, cell
 
 ACCOUNTS = (
     "account_id,name,domain,annual_revenue,hq_state,industry,employees\n"
@@ -122,3 +122,137 @@ def test_bad_accounts_file_writes_nothing(tmp_path: Path, extra_row: str) -> Non
     accounts.write_text(ACCOUNTS + extra_row, encoding="utf-8")
     assert run(accounts, fixes, out) == 1
     assert not out.exists()
+
+
+def test_formula_prefixed_account_id_is_decoded(tmp_path: Path) -> None:
+    accounts, fixes, out = setup(tmp_path, "")
+    accounts.write_text(ACCOUNTS + "=A3,Acme,acme.com,1,TX,Software,10\n", encoding="utf-8")
+    fixes.write_text(
+        FIX_HEADER + f"{cell('=A3')},hq_state,TX,CA,sec,u,high,r,y\n", encoding="utf-8"
+    )
+    assert run(accounts, fixes, out) == 0
+    assert rows(out)["=A3"]["hq_state"] == "CA"
+
+
+def test_formula_prefixed_current_value_round_trips(tmp_path: Path) -> None:
+    accounts, fixes, out = setup(tmp_path, "")
+    accounts.write_text(ACCOUNTS.replace("TX,Software,5", "TX,-Other,5"), encoding="utf-8")
+    fixes.write_text(
+        FIX_HEADER + f"A2,industry,{cell('-Other')},Software,sec,u,high,r,y\n", encoding="utf-8"
+    )
+    assert run(accounts, fixes, out) == 0
+    assert rows(out)["A2"]["industry"] == "Software"
+
+
+def test_write_atomic_failure_keeps_destination(tmp_path: Path) -> None:
+    out = tmp_path / "out.csv"
+    out.write_text("original\n", encoding="utf-8")
+    bad_rows = [{"a": "1"}, {"a": "2", "extra": "x"}]
+    with pytest.raises(ValueError):
+        apply_fixes.write_atomic(out, ["a"], bad_rows)
+    assert out.read_text(encoding="utf-8") == "original\n"
+    assert [p.name for p in tmp_path.iterdir()] == ["out.csv"]
+
+
+def run_approve(accounts: Path, fixes: Path, out: Path, *pairs: str) -> int:
+    argv = ["--accounts", str(accounts), "--fixes", str(fixes), "--out", str(out)]
+    for pair in pairs:
+        argv += ["--approve", pair]
+    return apply_fixes.main(argv)
+
+
+def test_approve_flag_records_and_applies(tmp_path: Path) -> None:
+    accounts, fixes, out = setup(
+        tmp_path,
+        "A1,annual_revenue,2200000000,3131266000,sec,u,high,r,\nA1,hq_state,CA,MA,sec,u,high,r,\n",
+    )
+    assert run_approve(accounts, fixes, out, "A1:annual_revenue") == 0
+    assert rows(out)["A1"]["annual_revenue"] == "3131266000"
+    assert rows(out)["A1"]["hq_state"] == "CA"
+    with fixes.open(encoding="utf-8", newline="") as f:
+        recorded = {(r["account_id"], r["field"]): r["approved"] for r in csv.DictReader(f)}
+    assert recorded == {("A1", "annual_revenue"): "y", ("A1", "hq_state"): ""}
+
+
+@pytest.mark.parametrize("pair", ["A1:employees", "A9:hq_state", "nonsense"])
+def test_approve_flag_rejects_unknown_pairs(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], pair: str
+) -> None:
+    accounts, fixes, out = setup(tmp_path, "A1,hq_state,CA,MA,sec,u,high,r,\n")
+    before = fixes.read_text(encoding="utf-8")
+    assert run_approve(accounts, fixes, out, pair) == 1
+    assert "--approve" in capsys.readouterr().err
+    assert fixes.read_text(encoding="utf-8") == before
+    assert not out.exists()
+
+
+def test_existing_output_is_not_overwritten_without_force(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    accounts, fixes, out = setup(tmp_path, "A1,hq_state,CA,MA,sec,u,high,r,y\n")
+    out.write_text("earlier round\n", encoding="utf-8")
+    assert run(accounts, fixes, out) == 1
+    assert "already exists" in capsys.readouterr().err
+    assert out.read_text(encoding="utf-8") == "earlier round\n"
+    argv = ["--accounts", str(accounts), "--fixes", str(fixes), "--out", str(out), "--force"]
+    assert apply_fixes.main(argv) == 0
+    assert rows(out)["A1"]["hq_state"] == "MA"
+
+
+def test_failed_output_write_records_no_approvals(tmp_path: Path) -> None:
+    accounts, fixes, _ = setup(tmp_path, "A1,hq_state,CA,MA,sec,u,high,r,\n")
+    before = fixes.read_text(encoding="utf-8")
+    out = tmp_path / "missing-dir" / "out.csv"
+    assert run_approve(accounts, fixes, out, "A1:hq_state") == 1
+    assert fixes.read_text(encoding="utf-8") == before
+
+
+def test_whitespace_prefixed_account_id_matches(tmp_path: Path) -> None:
+    accounts, fixes, out = setup(tmp_path, "")
+    accounts.write_text(ACCOUNTS + "\tA5,Acme,acme.com,1,TX,Software,10\n", encoding="utf-8")
+    fixes.write_text(
+        FIX_HEADER + f"{cell(chr(9) + 'A5')},hq_state,TX,CA,sec,u,high,r,\n", encoding="utf-8"
+    )
+    assert run_approve(accounts, fixes, out, "A5:hq_state") == 0
+    assert rows(out)["\tA5"]["hq_state"] == "CA"
+
+
+def test_approve_splits_on_last_colon(tmp_path: Path) -> None:
+    accounts, fixes, out = setup(tmp_path, "")
+    accounts.write_text(ACCOUNTS + "ACME:001,Acme,acme.com,1,TX,Software,10\n", encoding="utf-8")
+    fixes.write_text(FIX_HEADER + "ACME:001,hq_state,TX,CA,sec,u,high,r,\n", encoding="utf-8")
+    assert run_approve(accounts, fixes, out, "ACME:001:hq_state") == 0
+    assert rows(out)["ACME:001"]["hq_state"] == "CA"
+
+
+def test_approve_does_not_override_a_reviewers_no(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    accounts, fixes, out = setup(tmp_path, "A1,hq_state,CA,MA,sec,u,high,r,n\n")
+    before = fixes.read_text(encoding="utf-8")
+    assert run_approve(accounts, fixes, out, "A1:hq_state") == 1
+    assert "already marked 'n'" in capsys.readouterr().err
+    assert fixes.read_text(encoding="utf-8") == before
+
+
+def test_output_shows_decoded_account_id(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    accounts, fixes, out = setup(tmp_path, "")
+    accounts.write_text(ACCOUNTS + "=A3,Acme,acme.com,1,TX,Software,10\n", encoding="utf-8")
+    fixes.write_text(
+        FIX_HEADER + f"{cell('=A3')},hq_state,TX,CA,sec,u,high,r,y\n", encoding="utf-8"
+    )
+    run(accounts, fixes, out)
+    assert "line 2 =A3 applied" in capsys.readouterr().out
+
+
+def test_fixes_row_with_extra_values_is_rejected_before_writing(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    accounts, fixes, out = setup(tmp_path, "A1,hq_state,CA,MA,sec,u,high,r,,surprise\n")
+    before = fixes.read_text(encoding="utf-8")
+    assert run_approve(accounts, fixes, out, "A1:hq_state") == 1
+    assert "line 2: more values than columns" in capsys.readouterr().err
+    assert not out.exists()
+    assert fixes.read_text(encoding="utf-8") == before

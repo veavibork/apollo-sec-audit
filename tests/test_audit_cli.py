@@ -150,3 +150,33 @@ def test_rerun_keeps_approvals_unless_forced(
 
     assert run("--force") == 0
     assert read_csv(fixes_path)[0]["approved"] == ""
+
+
+@responses.activate
+def test_approval_guard_explains_recovery(
+    workspace: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert run() == 0
+    fixes_path = workspace / "reports" / "proposed_fixes.csv"
+    text = fixes_path.read_text(encoding="utf-8").splitlines()
+    text[1] = text[1] + "y"
+    fixes_path.write_text("\n".join(text) + "\n", encoding="utf-8")
+    capsys.readouterr()
+    assert run() == 1
+    err = capsys.readouterr().err
+    assert "apply_fixes.py" in err
+    assert "--force" in err
+    assert "--accounts data/accounts.updated.csv" in err
+
+
+def test_safe_output_replaces_unprintable_characters() -> None:
+    import io
+
+    from crm_audit.console import safe_output
+
+    raw = io.BytesIO()
+    stream = io.TextIOWrapper(raw, encoding="cp1252")
+    safe_output(stream)
+    stream.write("\u00d8rsted \u4e2d")
+    stream.flush()
+    assert raw.getvalue() == "\u00d8rsted \\u4e2d".encode("cp1252")

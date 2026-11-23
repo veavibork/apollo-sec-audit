@@ -13,6 +13,7 @@ from crm_audit.accounts import load_accounts
 from crm_audit.apollo import ApolloClient, cache_key, normalize_domain
 from crm_audit.cache import JsonCache
 from crm_audit.compare import compare_account
+from crm_audit.console import safe_output
 from crm_audit.errors import LiveCallLimitReached, SourceError
 from crm_audit.matching import find_sec
 from crm_audit.models import Account, AccountAudit
@@ -103,6 +104,7 @@ def audit_one(
 def main(argv: list[str] | None = None) -> int:
     load_dotenv()
     args = parse_args(argv)
+    safe_output()
     try:
         rules, industries = load_rules(), load_industries()
         accounts = load_accounts(args.accounts)
@@ -115,8 +117,9 @@ def main(argv: list[str] | None = None) -> int:
         fixes_path = args.out / "proposed_fixes.csv"
         if not args.force and has_approvals(fixes_path):
             raise ValueError(
-                f"{fixes_path} has approvals that a rerun would erase; "
-                "run apply_fixes.py first, or pass --force"
+                f"{fixes_path} has approvals that a rerun would erase. "
+                "Apply them with apply_fixes.py, then rerun with --force "
+                "(add --accounts data/accounts.updated.csv to audit the applied values)"
             )
         apollo = ApolloClient(cache, key if args.live else None, max_live_calls=cap)
     except (OSError, ValueError, SourceError) as exc:
