@@ -56,7 +56,11 @@ def read_rows(path: Path) -> tuple[list[str], list[dict[str, str]]]:
         header = list(reader.fieldnames or [])
         if sorted(header) != sorted(COLUMNS):
             raise ValueError(f"{path}: columns must be {', '.join(COLUMNS)}")
-        return header, list(reader)
+        rows = list(reader)
+    for line, row in enumerate(rows, start=2):
+        if None in row:
+            raise ValueError(f"{path} line {line}: more values than columns")
+    return header, rows
 
 
 def load_accounts(path: Path) -> list[Account]:

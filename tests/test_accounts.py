@@ -48,3 +48,8 @@ def test_bad_rows_name_the_line(tmp_path: Path, body: str, message: str) -> None
 def test_wrong_columns_rejected(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="columns must be"):
         load_accounts(write(tmp_path, "A1,X\n", "account_id,name\n"))
+
+
+def test_extra_values_rejected(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="line 2: more values than columns"):
+        load_accounts(write(tmp_path, "A1,X,x.com,1,MA,Software,1,surprise\n"))

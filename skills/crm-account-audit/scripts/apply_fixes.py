@@ -2,11 +2,20 @@
 
 import argparse
 import csv
+import os
 import sys
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
-from crm_audit.accounts import EDITABLE, parse_employees, parse_revenue, parse_text, read_rows
+from crm_audit.accounts import (
+    EDITABLE,
+    load_accounts,
+    parse_employees,
+    parse_revenue,
+    parse_text,
+    read_rows,
+)
 from crm_audit.reports import FIX_COLUMNS, cell, uncell
 from crm_audit.states import state_code
 
@@ -40,10 +49,14 @@ def check_proposed(field: str, raw: str) -> str:
     return raw.strip()
 
 
+def text(fix: dict[str, str], key: str) -> str:
+    return (fix.get(key) or "").strip()
+
+
 def apply_one(
     fix: dict[str, str], by_id: dict[str, dict[str, str]], done: set[tuple[str, str]]
 ) -> tuple[bool, str]:
-    account_id, field = fix["account_id"].strip(), fix["field"].strip()
+    account_id, field = text(fix, "account_id"), text(fix, "field")
     row = by_id.get(account_id)
     if row is None:
         return False, "account not in the accounts file"
@@ -53,8 +66,8 @@ def apply_one(
         return False, "already changed by an earlier approved row"
     try:
         current = PARSERS[field](row[field])
-        expected = PARSERS[field](uncell(fix["current_value"]))
-        value = check_proposed(field, uncell(fix["proposed_value"]))
+        expected = PARSERS[field](uncell(fix.get("current_value") or ""))
+        value = check_proposed(field, uncell(fix.get("proposed_value") or ""))
     except ValueError as exc:
         return False, str(exc)
     if current != expected:
@@ -69,17 +82,28 @@ def apply(rows: list[dict[str, str]], fixes: list[dict[str, str]]) -> list[Outco
     done: set[tuple[str, str]] = set()
     outcomes = []
     for line, fix in enumerate(fixes, start=2):
-        if fix.get("approved", "").strip().casefold() not in APPROVED:
+        if text(fix, "approved").casefold() not in APPROVED:
             continue
         applied, reason = apply_one(fix, by_id, done)
-        outcomes.append(
-            Outcome(line, fix["account_id"].strip(), fix["field"].strip(), applied, reason)
-        )
+        outcomes.append(Outcome(line, text(fix, "account_id"), text(fix, "field"), applied, reason))
     return outcomes
 
 
 def row_value(value: object) -> str:
     return "(blank)" if value is None else cell(value)
+
+
+def write_atomic(path: Path, header: list[str], rows: list[dict[str, str]]) -> None:
+    fd, tmp = tempfile.mkstemp(dir=path.parent, suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=header, lineterminator="\n")
+            writer.writeheader()
+            writer.writerows(rows)
+        os.replace(tmp, path)
+    except BaseException:
+        Path(tmp).unlink(missing_ok=True)
+        raise
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -92,6 +116,7 @@ def main(argv: list[str] | None = None) -> int:
         print("error: --out must differ from --accounts", file=sys.stderr)
         return 1
     try:
+        load_accounts(args.accounts)
         header, rows = read_rows(args.accounts)
         with args.fixes.open(encoding="utf-8-sig", newline="") as f:
             reader = csv.DictReader(f)
@@ -103,10 +128,7 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     outcomes = apply(rows, fixes)
-    with args.out.open("w", encoding="utf-8", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=header, lineterminator="\n")
-        writer.writeheader()
-        writer.writerows(rows)
+    write_atomic(args.out, header, rows)
 
     applied = [o for o in outcomes if o.applied]
     print(f"Wrote {args.out}: {len(applied)} applied, {len(outcomes) - len(applied)} skipped.")

@@ -103,3 +103,20 @@ def test_rejects_fix_file_with_wrong_columns(tmp_path: Path) -> None:
     accounts, fixes, out = setup(tmp_path, "")
     fixes.write_text("account_id,field\n", encoding="utf-8")
     assert run(accounts, fixes, out) == 1
+
+
+def test_short_rows_do_not_crash(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    accounts, fixes, out = setup(tmp_path, "A1,annual_revenue,2200000000,3131266000,sec,u,high,r\n")
+    assert run(accounts, fixes, out) == 0
+    assert "0 applied, 0 skipped" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize(
+    "extra_row",
+    ["A3,Acme,acme.com,1,TX,Software,10,extra\n", "A1,Dup,dup.com,1,TX,Software,10\n"],
+)
+def test_bad_accounts_file_writes_nothing(tmp_path: Path, extra_row: str) -> None:
+    accounts, fixes, out = setup(tmp_path, "A1,hq_state,CA,MA,sec,u,high,r,y\n")
+    accounts.write_text(ACCOUNTS + extra_row, encoding="utf-8")
+    assert run(accounts, fixes, out) == 1
+    assert not out.exists()
