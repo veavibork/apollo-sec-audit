@@ -110,11 +110,33 @@ def write_atomic(path: Path, header: list[str], rows: list[dict[str, str]]) -> N
         raise
 
 
+def mark_approvals(fixes: list[dict[str, str]], pairs: list[str]) -> None:
+    """Set approved=y on rows named 'ACCOUNT:FIELD'. ValueError if any pair matches no row."""
+    keys = {(uncell(text(f, "account_id")), text(f, "field")): f for f in fixes}
+    unknown = []
+    for pair in pairs:
+        account_id, _, field = pair.partition(":")
+        fix = keys.get((account_id.strip(), field.strip()))
+        if fix is None:
+            unknown.append(pair)
+        else:
+            fix["approved"] = "y"
+    if unknown:
+        raise ValueError(f"--approve matches no proposed fix: {', '.join(unknown)}")
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--accounts", type=Path, default=Path("data/accounts.csv"))
     parser.add_argument("--fixes", type=Path, default=Path("reports/proposed_fixes.csv"))
     parser.add_argument("--out", type=Path, default=Path("data/accounts.updated.csv"))
+    parser.add_argument(
+        "--approve",
+        action="append",
+        default=[],
+        metavar="ACCOUNT:FIELD",
+        help="record approval of this row in the fixes file, then apply",
+    )
     args = parser.parse_args(argv)
     if args.out.resolve() == args.accounts.resolve():
         print("error: --out must differ from --accounts", file=sys.stderr)
@@ -124,9 +146,13 @@ def main(argv: list[str] | None = None) -> int:
         header, rows = read_rows(args.accounts)
         with args.fixes.open(encoding="utf-8-sig", newline="") as f:
             reader = csv.DictReader(f)
-            if not {*FIX_COLUMNS, "approved"} <= set(reader.fieldnames or []):
+            fix_header = list(reader.fieldnames or [])
+            if not {*FIX_COLUMNS, "approved"} <= set(fix_header):
                 raise ValueError(f"{args.fixes}: missing columns; expected the audit's format")
             fixes = list(reader)
+        if args.approve:
+            mark_approvals(fixes, args.approve)
+            write_atomic(args.fixes, fix_header, fixes)
     except (OSError, ValueError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1

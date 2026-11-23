@@ -152,3 +152,35 @@ def test_write_atomic_failure_keeps_destination(tmp_path: Path) -> None:
         apply_fixes.write_atomic(out, ["a"], bad_rows)
     assert out.read_text(encoding="utf-8") == "original\n"
     assert [p.name for p in tmp_path.iterdir()] == ["out.csv"]
+
+
+def run_approve(accounts: Path, fixes: Path, out: Path, *pairs: str) -> int:
+    argv = ["--accounts", str(accounts), "--fixes", str(fixes), "--out", str(out)]
+    for pair in pairs:
+        argv += ["--approve", pair]
+    return apply_fixes.main(argv)
+
+
+def test_approve_flag_records_and_applies(tmp_path: Path) -> None:
+    accounts, fixes, out = setup(
+        tmp_path,
+        "A1,annual_revenue,2200000000,3131266000,sec,u,high,r,\nA1,hq_state,CA,MA,sec,u,high,r,\n",
+    )
+    assert run_approve(accounts, fixes, out, "A1:annual_revenue") == 0
+    assert rows(out)["A1"]["annual_revenue"] == "3131266000"
+    assert rows(out)["A1"]["hq_state"] == "CA"
+    with fixes.open(encoding="utf-8", newline="") as f:
+        recorded = {(r["account_id"], r["field"]): r["approved"] for r in csv.DictReader(f)}
+    assert recorded == {("A1", "annual_revenue"): "y", ("A1", "hq_state"): ""}
+
+
+@pytest.mark.parametrize("pair", ["A1:employees", "A9:hq_state", "nonsense"])
+def test_approve_flag_rejects_unknown_pairs(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], pair: str
+) -> None:
+    accounts, fixes, out = setup(tmp_path, "A1,hq_state,CA,MA,sec,u,high,r,\n")
+    before = fixes.read_text(encoding="utf-8")
+    assert run_approve(accounts, fixes, out, pair) == 1
+    assert "--approve" in capsys.readouterr().err
+    assert fixes.read_text(encoding="utf-8") == before
+    assert not out.exists()
