@@ -92,3 +92,26 @@ def test_industry_labels(sic: str, label: str) -> None:
 @pytest.mark.parametrize("sic", [None, "", "abc", "７３７２", "-1"])
 def test_industry_label_rejects_non_codes(sic: str | None) -> None:
     assert load_industries().label(sic) is None
+
+
+@pytest.mark.parametrize(
+    "path",
+    [["precedence", "annual_revenue"], ["sec", "revenue_concepts"], ["signals", "forms"]],
+)
+def test_empty_required_lists_are_rejected(path: list[str]) -> None:
+    with pytest.raises(ValueError, match="rules:"):
+        parse_rules(_broken(path, []))
+
+
+@pytest.mark.parametrize("path", [["review_on_conflict", "fields"], ["name_match", "strip_words"]])
+def test_optional_lists_may_be_empty(path: list[str]) -> None:
+    parse_rules(_broken(path, []))
+
+
+def test_overlapping_ranges_of_equal_width_are_rejected(tmp_path: Any) -> None:
+    path = tmp_path / "sic.csv"
+    path.write_text(
+        "sic_start,sic_end,label\n7370,7379,Software\n7370,7379,Technology\n", encoding="utf-8"
+    )
+    with pytest.raises(ValueError, match="sic_industry: overlapping"):
+        load_industries(path)

@@ -37,9 +37,11 @@ def _table(data: dict[str, Any], key: str) -> dict[str, Any]:
     return value
 
 
-def _str_list(value: Any, where: str) -> tuple[str, ...]:
+def _str_list(value: Any, where: str, allow_empty: bool = False) -> tuple[str, ...]:
     if not isinstance(value, list) or not all(isinstance(v, str) and v for v in value):
         raise ValueError(f"rules: {where} must be a list of strings")
+    if not value and not allow_empty:
+        raise ValueError(f"rules: {where} must not be empty")
     return tuple(value)
 
 
@@ -66,7 +68,7 @@ def parse_rules(data: dict[str, Any]) -> Rules:
         raise ValueError("rules: tolerance must cover annual_revenue and employees")
 
     review = frozenset(
-        _str_list(_table(data, "review_on_conflict").get("fields"), "review_on_conflict")
+        _str_list(_table(data, "review_on_conflict").get("fields"), "review_on_conflict", True)
     )
     if not review <= FIELDS:
         raise ValueError("rules: review_on_conflict.fields has an unknown field")
@@ -76,7 +78,9 @@ def parse_rules(data: dict[str, Any]) -> Rules:
     borderline = _number(names.get("borderline"), "name_match.borderline", 0, 100)
     if borderline > pass_score:
         raise ValueError("rules: name_match.borderline must not exceed name_match.pass")
-    strip = frozenset(w.casefold() for w in _str_list(names.get("strip_words"), "strip_words"))
+    strip = frozenset(
+        w.casefold() for w in _str_list(names.get("strip_words"), "strip_words", True)
+    )
 
     signals = _table(data, "signals")
     lookback = signals.get("lookback_days")
@@ -117,11 +121,17 @@ class IndustryMap:
 
 
 def load_industries(path: Path = INDUSTRY_PATH) -> IndustryMap:
-    ranges = []
+    ranges: list[tuple[int, int, str]] = []
     with path.open(encoding="utf-8", newline="") as f:
         for row in csv.DictReader(f):
             start, end, label = int(row["sic_start"]), int(row["sic_end"]), row["label"].strip()
             if start > end or not label:
                 raise ValueError(f"sic_industry: bad row {row}")
+            for other_start, other_end, other_label in ranges:
+                overlaps = start <= other_end and other_start <= end
+                if overlaps and end - start == other_end - other_start:
+                    raise ValueError(
+                        f"sic_industry: overlapping ranges of equal width: {label}, {other_label}"
+                    )
             ranges.append((start, end, label))
     return IndustryMap(tuple(ranges))
