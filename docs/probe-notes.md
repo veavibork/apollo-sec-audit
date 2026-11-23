@@ -76,4 +76,5 @@ Object keyed by row number. Each row: `cik_str` (int), `ticker`, `title`. HUBS â
 - `google.com`: Apollo's organization has **no `publicly_traded_symbol`**. The listed company is the parent, Alphabet Inc. (GOOGL), so the account gets no SEC data. That's a parent/subsidiary gap, not a name-check failure.
 - `deltafaucet.com` (planted as Delta Air Lines' domain): Apollo returned "Delta Faucet Company". The CRM-vs-Apollo name check scored 59.3 and failed, so every value went to review at low confidence.
 - Chick-fil-A: Apollo estimates 3,000 employees, which looks like corporate staff rather than the franchise system. Medium-confidence proposals still need a person's judgment.
+- `google.com`: Apollo's `founded_year` is 2010 (Google was founded in 1998). Founded year is reported as an Apollo fact, never compared, so this only shows up in the signals.
 - Databricks: `sic_codes` `["7374", "7372"]` â†’ Software, through the same SIC table SEC values use.
