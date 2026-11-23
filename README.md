@@ -18,6 +18,8 @@ For each account in a CRM export (`account_id, name, domain, annual_revenue, hq_
 
 Why that matters to a revenue team, with every claim sourced or labeled as a hypothesis: [docs/value-case.md](docs/value-case.md).
 
+**One-pager:** [docs/one-pager.md](docs/one-pager.md). **Demo (5 min or less):** _Loom link to be added._
+
 ## Quick start
 
 Requirements: Python 3.12.
@@ -177,7 +179,7 @@ Nothing. Everything here was built for this exercise. It reuses public APIs (Apo
 
 ## How it was checked
 
-- **329 offline tests.**
+- **341 offline tests.**
   - `pytest-socket` blocks the network, and `responses` fakes HTTP.
   - A hand-written golden harness ([`tests/golden/cases.json`](tests/golden/cases.json)) states the expected status and confidence for each case.
   - Mutation checks confirmed that changing a rule fails the cases it should.
