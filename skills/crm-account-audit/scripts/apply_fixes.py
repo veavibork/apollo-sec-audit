@@ -17,9 +17,11 @@ from crm_audit.accounts import (
     read_rows,
 )
 from crm_audit.reports import FIX_COLUMNS, cell, uncell
+from crm_audit.rules import load_industries
 from crm_audit.states import state_code
 
 APPROVED = frozenset({"y", "yes"})
+INDUSTRY_LABELS = frozenset(label for _, _, label in load_industries().ranges)
 PARSERS = {
     "annual_revenue": parse_revenue,
     "employees": parse_employees,
@@ -46,6 +48,8 @@ def check_proposed(field: str, raw: str) -> str:
         raise ValueError(f"{value!r} is not a two-letter US state code")
     if field == "industry" and " | " in str(value):
         raise ValueError("proposed industry lists several labels; pick one in the CRM")
+    if field == "industry" and value not in INDUSTRY_LABELS:
+        raise ValueError(f"{value!r} is not a known industry label")
     return raw.strip()
 
 

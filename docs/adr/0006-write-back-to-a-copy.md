@@ -9,7 +9,7 @@ KICKOFF says a person approves every change. CLAUDE.md says: propose changes, ne
 - Each approved row is checked before it's applied:
   - the account exists and the field is editable;
   - the CRM value still equals the audit's `current_value`, so a value someone changed after the audit is skipped, not overwritten;
-  - the proposed value parses for its field (number, two-letter US state, a single industry label);
+  - the proposed value parses for its field (number, two-letter US state, an industry label from `sic_industry.csv`);
   - only one approved row per account and field.
 - Skipped rows are listed with a reason. The output is written to a temp file and renamed, so a failure never leaves a half-written file.
 - Rerunning `audit.py` refuses to replace a `proposed_fixes.csv` that holds approvals, unless `--force` is passed. The check runs before any Apollo call.
