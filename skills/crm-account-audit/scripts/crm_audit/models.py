@@ -67,3 +67,64 @@ class SecRevenue:
     filed: date
     accession: str
     index_url: str
+
+
+@dataclass(frozen=True)
+class Account:
+    account_id: str
+    name: str | None
+    domain: str | None
+    annual_revenue: float | None
+    hq_state: str | None
+    industry: str | None
+    employees: int | None
+
+
+@dataclass(frozen=True)
+class NameCheck:
+    score: float
+    verdict: str
+    compared_to: str
+
+
+@dataclass(frozen=True)
+class SecLookup:
+    status: str
+    ticker: str | None = None
+    match: TickerMatch | None = None
+    company: SecCompany | None = None
+    revenue: SecRevenue | None = None
+    name_check: NameCheck | None = None
+
+
+@dataclass(frozen=True)
+class FieldResult:
+    field: str
+    crm_value: str | float | int | None
+    apollo_value: str | float | int | None
+    sec_value: str | float | int | None
+    winner: str | None
+    proposed_value: str | float | int | None
+    status: str
+    confidence: str | None
+    rationale: str
+    evidence_url: str | None
+
+
+@dataclass(frozen=True)
+class Signal:
+    kind: str
+    detail: str
+    source: str
+    date: date | None
+    url: str | None
+
+
+@dataclass(frozen=True)
+class AccountAudit:
+    account: Account
+    sec_status: str
+    ticker: str | None
+    cik: str | None
+    fields: tuple[FieldResult, ...]
+    signals: tuple[Signal, ...]

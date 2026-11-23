@@ -255,8 +255,12 @@ class SecClient:
             ),
         )
 
-    def annual_revenue(self, cik: str | int) -> SecRevenue | None:
+    def annual_revenue(
+        self, cik: str | int, concepts: Iterable[str] = REVENUE_CONCEPTS
+    ) -> SecRevenue | None:
         cik = normalize_cik(cik)
         return select_annual_revenue(
-            cik, self._get(f"sec/companyfacts_{cik}.json", FACTS_URL.format(cik=cik), valid_facts)
+            cik,
+            self._get(f"sec/companyfacts_{cik}.json", FACTS_URL.format(cik=cik), valid_facts),
+            concepts,
         )
