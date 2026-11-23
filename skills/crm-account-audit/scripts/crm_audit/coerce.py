@@ -1,5 +1,6 @@
 """Type-checked reads from untrusted JSON. Wrong types become None, never exceptions."""
 
+import math
 from datetime import date
 from typing import Any
 
@@ -23,7 +24,8 @@ def as_int(value: Any) -> int | None:
 def as_float(value: Any) -> float | None:
     if isinstance(value, bool) or not isinstance(value, int | float):
         return None
-    return float(value)
+    number = float(value)
+    return number if math.isfinite(number) else None
 
 
 def as_str_tuple(value: Any) -> tuple[str, ...]:

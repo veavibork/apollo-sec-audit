@@ -20,7 +20,7 @@ def normalize_domain(raw: str) -> str:
     text = raw.strip().lower()
     text = re.sub(r"^[a-z][a-z0-9+.-]*://", "", text)
     text = text.split("/", 1)[0].split("?", 1)[0].split("#", 1)[0]
-    text = text.removeprefix("www.")
+    text = text.split(":", 1)[0].rstrip(".").removeprefix("www.")
     if not DOMAIN_PATTERN.fullmatch(text):
         raise ValueError(f"not a domain: {raw!r}")
     return text
@@ -29,7 +29,9 @@ def normalize_domain(raw: str) -> str:
 def trim(raw: Any) -> ApolloOrg | None:
     if not isinstance(raw, dict):
         raise SourceError("apollo: response is not a JSON object")
-    org = raw.get("organization")
+    if "organization" not in raw:
+        raise SourceError("apollo: response has no 'organization' key")
+    org = raw["organization"]
     if not isinstance(org, dict) or not org:
         return None
     return ApolloOrg(
@@ -68,7 +70,7 @@ class ApolloClient:
         self.live_calls = 0
 
     def enrich(self, domain: str) -> ApolloOrg | None:
-        """Cache first. A live call is counted before it is sent, since it may cost a credit."""
+        """Cache first. Live calls count toward the cap before they are sent."""
         domain = normalize_domain(domain)
         key = f"apollo/{domain}.json"
         raw = self._cache.get(key)

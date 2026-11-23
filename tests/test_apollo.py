@@ -149,7 +149,9 @@ def test_trim_turns_wrong_types_into_none() -> None:
     assert org.naics_codes == ("513210",)
 
 
-@pytest.mark.parametrize("raw", [{}, {"organization": None}, {"organization": {}}])
+@pytest.mark.parametrize(
+    "raw", [{"organization": None}, {"organization": {}}, {"organization": "x"}]
+)
 def test_trim_returns_none_when_no_organization(raw: Any) -> None:
     assert trim(raw) is None
 
@@ -173,3 +175,34 @@ def test_normalize_domain(raw: str, expected: str) -> None:
 def test_normalize_domain_rejects_non_domains(raw: str) -> None:
     with pytest.raises(ValueError, match="not a domain"):
         normalize_domain(raw)
+
+
+@responses.activate
+def test_object_without_organization_key_raises_and_writes_no_cache(cache: JsonCache) -> None:
+    responses.get(ENRICH_URL, json={"error": "something went wrong"})
+    with pytest.raises(SourceError, match="no 'organization' key"):
+        client(cache).enrich("hubspot.com")
+    assert cache.get("apollo/hubspot.com.json") is None
+
+
+@responses.activate
+def test_explicit_null_organization_is_cached_as_no_match(cache: JsonCache) -> None:
+    responses.get(ENRICH_URL, json={"organization": None})
+    assert client(cache).enrich("unknown.example") is None
+    assert cache.get("apollo/unknown.example.json") == {"organization": None}
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [("https://hubspot.com:443/", "hubspot.com"), ("hubspot.com.", "hubspot.com")],
+)
+def test_normalize_domain_strips_port_and_trailing_dot(raw: str, expected: str) -> None:
+    assert normalize_domain(raw) == expected
+
+
+@pytest.mark.parametrize("value", [float("nan"), float("inf")])
+def test_trim_rejects_non_finite_numbers(value: float) -> None:
+    org = trim({"organization": {"annual_revenue": value, "total_funding": value}})
+    assert org is not None
+    assert org.annual_revenue is None
+    assert org.total_funding is None
