@@ -179,7 +179,7 @@ Nothing. Everything here was built for this exercise. It reuses public APIs (Apo
 
 ## How it was checked
 
-- **341 offline tests.**
+- **342 offline tests.**
   - `pytest-socket` blocks the network, and `responses` fakes HTTP.
   - A hand-written golden harness ([`tests/golden/cases.json`](tests/golden/cases.json)) states the expected status and confidence for each case.
   - Mutation checks confirmed that changing a rule fails the cases it should.

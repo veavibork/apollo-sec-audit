@@ -4,7 +4,7 @@
 KICKOFF says a person approves every change. CLAUDE.md says: propose changes, never apply them without explicit approval, and never overwrite a value a person entered without flagging it. The audit writes proposals; something has to turn approvals into changes safely.
 
 ## Decision
-- `audit.py` writes `reports/proposed_fixes.csv` with an empty `approved` column. Only high and medium items are listed; low items go to `needs_review.csv` and can't be applied.
+- `audit.py` writes `reports/proposed_fixes.csv` with an empty `approved` column. Only high and medium items are listed; low items go to `needs_review.csv`. `apply_fixes.py` also refuses any row marked low, so a low item copied into the fixes file still can't be applied.
 - A person marks rows `y` (or `yes`). `apply_fixes.py` applies only those rows to **`data/accounts.updated.csv`**. The input file is never written, and `--out` can't point at it.
 - Each approved row is checked before it's applied:
   - the account exists and the field is editable;

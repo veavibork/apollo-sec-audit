@@ -54,7 +54,7 @@ CRM CSV ──domain──► Apollo enrich ──ticker──► SEC: tickers �
 ## How it was built and checked
 
 - Built with Claude Code.
-- **341 offline tests**, including a hand-written golden harness and mutation checks.
+- **342 offline tests**, including a hand-written golden harness and mutation checks.
 - Two AI reviews before every PR and a third (CodeRabbit) after. A person approved each merge.
 - A cold test in a fresh session that saw only `SKILL.md`.
 
