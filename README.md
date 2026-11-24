@@ -177,7 +177,7 @@ Commit timestamps span longer than that. CodeRabbit's free tier allows one revie
 
 ## What was pre-existing
 
-The approach builds on my earlier public project, hubspot-company-enrichment, but no code was reused. Everything here was built for this exercise. It reuses public APIs (Apollo organization enrichment, SEC EDGAR) and standard libraries (`requests`, `rapidfuzz`, `pytest`, `responses`). The test fixtures started from one real Apollo response and real SEC responses. Apollo's values were then replaced with fake ones ([ADR 0001](docs/adr/0001-fixtures-from-real-responses.md)).
+The approach builds on my earlier public project, [hubspot-company-enrichment](https://github.com/veavibork/hubspot-company-enrichment), but no code was reused. Everything here was built for this exercise. It reuses public APIs (Apollo organization enrichment, SEC EDGAR) and standard libraries (`requests`, `rapidfuzz`, `pytest`, `responses`). The test fixtures started from one real Apollo response and real SEC responses. Apollo's values were then replaced with fake ones ([ADR 0001](docs/adr/0001-fixtures-from-real-responses.md)).
 
 ## Where AI helped, and where I didn't trust it
 
