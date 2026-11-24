@@ -2,6 +2,12 @@
 
 An Agent Skill that audits CRM account records against **Apollo** enrichment and **SEC EDGAR** filings. It proposes evidence-backed fixes and surfaces buying signals from SEC filings. A person approves every change.
 
+## Links
+
+- **Demo (Loom, under 5 min):** [loom.com/share/d0071f03…](https://www.loom.com/share/d0071f03ff394d4a8741671c64a5e2a2)
+- **One-pager:** [docs/one-pager.md](docs/one-pager.md)
+- **Value case:** [docs/value-case.md](docs/value-case.md): why each finding matters to a revenue team, with every claim sourced or labeled as a hypothesis
+
 ## What it does
 
 For each account in a CRM export (`account_id, name, domain, annual_revenue, hq_state, industry, employees`), the skill:
@@ -15,10 +21,6 @@ For each account in a CRM export (`account_id, name, domain, annual_revenue, hq_
    - Low-confidence items go to `needs_review.csv` and are never proposed.
 4. **Adds what the CRM doesn't have:** legal name, fiscal year end, former names, and the last 12 months of 8-Ks for executive changes (5.02), acquisitions (2.01), restructurings (2.05) and material agreements (1.01).
 5. **Applies only approved rows,** to a copy of the CRM file.
-
-Why that matters to a revenue team, with every claim sourced or labeled as a hypothesis: [docs/value-case.md](docs/value-case.md).
-
-**One-pager:** [docs/one-pager.md](docs/one-pager.md). **Demo (5 min or less):** _Loom link to be added._
 
 ## Quick start
 
