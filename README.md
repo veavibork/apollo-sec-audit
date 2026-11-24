@@ -91,24 +91,44 @@ Details: [docs/probe-notes.md](docs/probe-notes.md).
 
 ## How it works
 
-```text
-data/accounts.csv
-      │  domain
-      ▼
-Apollo enrich ──(cache/apollo, 1 credit per uncached domain, capped)──► ApolloOrg
-      │  publicly_traded_symbol
-      ▼
-SEC company_tickers.json ──► CIK ──► submissions (name, SIC, state, FYE, 8-Ks)
-                                   └► companyfacts (latest full-year 10-K revenue)
-      │
-      ▼
-matching.py (name checks) → compare.py (rules.toml: precedence, tolerances, confidence)
-      │                         signals.py (8-K items, FYE, former names)
-      ▼
-reports/  ──► summary.py (compact JSON) ──► the model explains, the user approves
-      │
-      ▼
-apply_fixes.py --approve ──► data/accounts.updated.csv (input never edited)
+```mermaid
+flowchart TB
+    CRM[("accounts.csv<br/>CRM export")]
+
+    subgraph row[" "]
+        direction LR
+        subgraph c1["1 · Find the company · 2 · Read SEC filings"]
+            direction TB
+            APO["Apollo enrich<br/><i>cached · 1 credit per new domain · capped</i>"]
+            TICK["SEC company_tickers.json<br/><i>ticker → CIK, exact lookup</i>"]
+            SUB["submissions<br/><i>legal name · SIC · state · FYE · 8-Ks</i>"]
+            FACTS["companyfacts<br/><i>latest full-year 10-K revenue</i>"]
+            APO -- ticker --> TICK -- CIK --> SUB
+            SUB -. same CIK .-> FACTS
+        end
+        subgraph c2["3 · Judge in code"]
+            direction TB
+            MATCH["matching.py<br/><i>name checks</i>"]
+            CMP["compare.py + rules.toml<br/><i>precedence · tolerances · confidence</i>"]
+            SIG["signals.py<br/><i>8-K items · FYE · former names</i>"]
+            MATCH --> CMP
+            MATCH -.-> SIG
+            CMP ~~~ SIG
+        end
+        subgraph c3["4 · Explain and approve"]
+            direction TB
+            REP[("reports/")]
+            SUM["summary.py<br/><i>compact JSON</i>"]
+            LLM{{"Claude explains<br/>you approve"}}
+            APPLY["apply_fixes.py --approve"]
+            REP --> SUM --> LLM --> APPLY
+        end
+        c1 --> c2 --> c3
+    end
+
+    UPD[("accounts.updated.csv<br/><i>original never edited</i>")]
+    CRM -- domain --> row
+    row --> UPD
 ```
 
 ### Design decisions
