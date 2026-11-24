@@ -169,6 +169,16 @@ See "What I'd do next".
 - **US accounts only.** Non-US states are `unverified`, never guessed.
 - A person reviews every proposed change. Medium-confidence fixes in particular need a sanity check.
 
+## Time spent
+
+The brief suggested about three hours. Active build time was about 3-4 hours, plus about 2 hours of one-time setup: a new workspace for take-home projects, CodeRabbit and Loom.
+
+Commit timestamps span longer than that. CodeRabbit's free tier allows one review an hour, and I paused at times between reviews rather than skip the second model's check. On a team, a paid reviewer, an existing Bugbot setup, or a second agent from a different model family would remove that wait.
+
+## What was pre-existing
+
+The approach builds on my earlier public project, [hubspot-company-enrichment](https://github.com/veavibork/hubspot-company-enrichment), but no code was reused. Everything here was built for this exercise. It reuses public APIs (Apollo organization enrichment, SEC EDGAR) and standard libraries (`requests`, `rapidfuzz`, `pytest`, `responses`). The test fixtures started from one real Apollo response and real SEC responses. Apollo's values were then replaced with fake ones ([ADR 0001](docs/adr/0001-fixtures-from-real-responses.md)).
+
 ## Where AI helped, and where I didn't trust it
 
 I built this with Claude Code. It wrote most of the code and tests; I set the direction, reviewed every PR, and approved every merge. Four moments show where its output needed checking.
@@ -194,10 +204,6 @@ I built this with Claude Code. It wrote most of the code and tests; I set the di
 - two AI reviews (code and security) run before each PR, and a third (CodeRabbit) after
 - a fresh session tested the skill using only `SKILL.md`
 - live data checked every field name before any code relied on it ([probe notes](docs/probe-notes.md))
-
-## What was pre-existing
-
-Nothing. Everything here was built for this exercise. It reuses public APIs (Apollo organization enrichment, SEC EDGAR) and standard libraries (`requests`, `rapidfuzz`, `pytest`, `responses`). The test fixtures started from one real Apollo response and real SEC responses. Apollo's values were then replaced with fake ones ([ADR 0001](docs/adr/0001-fixtures-from-real-responses.md)).
 
 ## How it was checked
 
