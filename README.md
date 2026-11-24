@@ -18,6 +18,8 @@ For each account in a CRM export (`account_id, name, domain, annual_revenue, hq_
 
 Why that matters to a revenue team, with every claim sourced or labeled as a hypothesis: [docs/value-case.md](docs/value-case.md).
 
+**One-pager:** [docs/one-pager.md](docs/one-pager.md). **Demo (5 min or less):** _Loom link to be added._
+
 ## Quick start
 
 Requirements: Python 3.12.
@@ -177,7 +179,7 @@ Nothing. Everything here was built for this exercise. It reuses public APIs (Apo
 
 ## How it was checked
 
-- **329 offline tests.**
+- **342 offline tests.**
   - `pytest-socket` blocks the network, and `responses` fakes HTTP.
   - A hand-written golden harness ([`tests/golden/cases.json`](tests/golden/cases.json)) states the expected status and confidence for each case.
   - Mutation checks confirmed that changing a rule fails the cases it should.
@@ -197,6 +199,7 @@ Nothing. Everything here was built for this exercise. It reuses public APIs (Apo
 - **GitHub Code Quality.** Not enabled: its billing for public repos was unclear, and ruff, mypy, CodeQL and CodeRabbit already cover most of it. Revisit with a paid plan.
 - **Cache expiry.** Cached responses never expire ([ADR 0003](docs/adr/0003-apollo-credit-guardrails.md)). SEC's ticker list and filings change daily, so a long-lived cache misses new 8-Ks. Give SEC entries a TTL (e.g. one day) and Apollo entries a longer one tied to the credit budget.
 - **Retries with backoff.** A 429 or 5xx fails the account at once. Retry SEC calls with backoff; retry Apollo only within the credit cap.
+- **File locking for concurrent runs.** Two `apply_fixes` runs on the same files at once can still lose an edit or an output ([ADR 0006](docs/adr/0006-write-back-to-a-copy.md)). A lock that every writer honors would close that; a single user running one command at a time never hits it.
 - **Shared rate limit.** The SEC throttle is per process. Two runs at once could exceed 10 requests per second. Use a shared limiter if runs go parallel.
 - **Stronger name check.** `token_set_ratio` passes subsets ("Apple" vs "Apple Hospitality REIT"; [ADR 0005](docs/adr/0005-ticker-matching-and-name-check.md)). Add a second signal, such as `token_sort_ratio` or the HQ state, before trusting the match.
 - **Paid CodeRabbit tier.** The free tier allows about one review per hour. So minor findings that don't change a PR's behavior are deferred to the next step's PR, where they're fixed test-first, instead of waiting an hour for a re-review. The PR thread names the PR that fixes each one. With a paid tier, fix and re-review in the same PR.

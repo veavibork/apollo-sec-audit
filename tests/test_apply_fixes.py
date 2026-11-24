@@ -1,5 +1,6 @@
 import csv
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -58,7 +59,7 @@ def test_applies_only_approved_rows(tmp_path: Path, capsys: pytest.CaptureFixtur
         ("A9,annual_revenue,1,2,sec,u,high,r,y\n", "account not in the accounts file"),
         ("A1,name,HubSpot,HUBSPOT INC,sec,u,high,r,y\n", "can't be edited"),
         ("A1,hq_state,CA,Massachusetts,sec,u,high,r,y\n", "not a two-letter US state code"),
-        ("A1,industry,,Restaurants | Software,apollo,,low,r,y\n", "lists several labels"),
+        ("A1,industry,,Restaurants | Software,apollo,,medium,r,y\n", "lists several labels"),
         ("A1,industry,,=HYPERLINK(1),sec,u,high,r,y\n", "not a known industry label"),
         ("A1,industry,,Widgets,sec,u,high,r,y\n", "not a known industry label"),
         ("A1,employees,8000,lots,apollo,,medium,r,y\n", "must be a whole number"),
@@ -333,3 +334,46 @@ def test_failed_fallback_create_leaves_no_partial_file(
     with pytest.raises(OSError):
         apply_fixes.write_atomic(out, ["a"], [{"a": "1"}], replace=False)
     assert list(tmp_path.iterdir()) == []
+
+
+def test_failed_close_in_fallback_create_leaves_no_partial_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    real_open = Path.open
+
+    class FailsOnClose:
+        def __init__(self, f: Any) -> None:
+            self.f = f
+
+        def __enter__(self) -> "FailsOnClose":
+            return self
+
+        def write(self, data: bytes) -> int:
+            return int(self.f.write(data))
+
+        def __exit__(self, *exc: object) -> None:
+            self.f.close()
+            raise OSError(28, "No space left on device")
+
+    def patched_open(self: Path, mode: str = "r", *args: Any, **kwargs: Any) -> Any:
+        f = real_open(self, mode, *args, **kwargs)
+        return FailsOnClose(f) if mode == "xb" else f
+
+    def no_links(src: object, dst: object) -> None:
+        raise OSError(1, "Incorrect function")
+
+    monkeypatch.setattr("os.link", no_links)
+    monkeypatch.setattr(Path, "open", patched_open)
+    out = tmp_path / "out.csv"
+    with pytest.raises(OSError, match="No space left"):
+        apply_fixes.write_atomic(out, ["a"], [{"a": "1"}], replace=False)
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_low_confidence_rows_are_never_applied(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    accounts, fixes, out = setup(tmp_path, "A1,hq_state,CA,MA,apollo,,low,r,y\n")
+    assert run(accounts, fixes, out) == 0
+    assert "low-confidence" in capsys.readouterr().out
+    assert rows(out)["A1"]["hq_state"] == "CA"
