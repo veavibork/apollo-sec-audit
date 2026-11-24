@@ -5,7 +5,7 @@ An Agent Skill that audits CRM account records against **Apollo** enrichment and
 ## Links
 
 - **Demo (Loom, under 5 min):** [loom.com/share/d0071f03…](https://www.loom.com/share/d0071f03ff394d4a8741671c64a5e2a2)
-- **One-pager:** [docs/one-pager.md](docs/one-pager.md)
+- **One-pager:** [designed PDF](docs/one-pager.pdf) · [text version](docs/one-pager.md)
 - **Value case:** [docs/value-case.md](docs/value-case.md): why each finding matters to a revenue team, with every claim sourced or labeled as a hypothesis
 
 ## What it does
